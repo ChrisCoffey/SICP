@@ -284,4 +284,4 @@
     :else (fast-mult a (dec n) (+ acc a))))
 
 ; 1.19
-;; a) show that
+;; finish this implemenation
