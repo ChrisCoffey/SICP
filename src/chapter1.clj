@@ -179,7 +179,7 @@
   (iter 2 1 0 3))
   )
 
-; 1.13
+; 1.12
 ;; Recursively compute the [r,n]th element of pascal's triangle.
 ;; Pascals triangle
 ;;;          1
@@ -196,3 +196,92 @@
     (= row column) 1
     :else (+ (pascal-element (dec row) (dec column)) (pascal-element (dec row) column))))
 
+;1.13
+;; Prove Fib(n) is the closest integer to phi^n/sqrt(5), where phi = golden ratio
+
+(defn fibProof [n]
+  (let [phi (/ (+ 1 (Math/sqrt 5.0)) 2)
+        psi (/ (- 1 (Math/sqrt 5.0)) 2)
+        fibN (fn fib [n]
+               (cond
+                 (or (= n 1) (= n 2)) 1
+                 :else (+ (fib (dec n)) (fib (- n 2)))))]
+    [(fibN n) (/ (- (Math/pow phi n) (Math/pow psi n)) (Math/sqrt 5))]
+    ))
+
+; 1.14
+;; Draw the tree for computing the ways to make change for 11 cents
+
+;;Given that there are three types of coins less than 11 cents, we start our algorithm with KC = 3
+;;                          (cc 11 3)
+;;                          /
+;;                (cc 11 2) + (cc 1 3)
+;;                   /                \
+;;        (cc 11 1) + (cc 6 3)          1
+;;                /     \
+;;      (11 0) + (10 1)    (1 3)
+;;        /       \             \
+;;      0     (10 0) + (9 1)     ...
+;;            /         \           \
+;;           0         ...           1
+;;                        \
+;;                          1
+
+; 1.15
+;; Sine of an angle in radians leverages sin x = 3 sin x/3 - 4 sin^3 x/3
+
+(defn sine [angle]
+  (let [cube (fn [x] (* x x x))
+        p (fn [x] (- ( * 3 x) (* 4 (cube x))))
+        ]
+    (if (not (> (Math/abs angle) 0.1))
+      angle
+      (do
+        (println "a")
+        (p (sine (/ angle 3.0)))))
+    ))
+
+; a = 5
+; growth looks logarithmic due to the constant chopping of the input. We'll very quickly get to a small angle
+
+; 1.16
+;; Iterative fast exponentiation
+
+;;iterable version of power is
+;; given ax^y
+;; 2^4 = 1(2)^4 = 2(2)^3 = 4(2)^2 = 8 * 2-
+
+(defn fast-exp [a n]
+  (cond
+    (zero? n) 1
+    (even? n) (Math/pow (fast-exp b (/ n 2)) 2)
+    :else (* b (fast-exp b (dec n)))))
+
+(defn fast-exp2 [a b n]
+  (cond
+    (zero? b) n
+    (even? b) (fast-exp2 (* a a) (/ b 2) n)
+    :else (fast-exp2 a (dec b) (* a n))))
+
+; 1.17
+; logarithmic multiplication
+
+10 + 10 + 10 = 3 * 10 = 10 + (2 * 10)
+
+(defn fast-mult [a n]
+  (cond
+    (zero? n) 0
+    (even? n) (* 2 (fast-mult a (/ n 2)))
+    :else (+ a (fast-mult a (dec n)))))
+
+; 1.18
+;; iterative logarithmic multipliation (Russian Peasant method)
+
+(defn fast-mult2 [a n acc]
+  (cond
+    (zero? n) acc
+    (even? n) (fast-mult (* 2 a) (/ n 2) acc)
+    :else (fast-mult a (dec n) (+ acc a))))
+
+; 1.19
+;; a) show that
