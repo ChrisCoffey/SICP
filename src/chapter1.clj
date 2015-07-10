@@ -251,7 +251,7 @@
 ;; given ax^y
 ;; 2^4 = 1(2)^4 = 2(2)^3 = 4(2)^2 = 8 * 2-
 
-(defn fast-exp [a n]
+(defn fast-exp [b n]
   (cond
     (zero? n) 1
     (even? n) (Math/pow (fast-exp b (/ n 2)) 2)
@@ -284,4 +284,159 @@
     :else (fast-mult a (dec n) (+ acc a))))
 
 ; 1.19
-;; finish this implemenation
+;; finish this implemenation of fast fibonacci, such that a = bq + aq + ap && b = bp + aq
+
+(defn fib [n]
+  (let [fib-iter (fn iter [a b p q count]
+                   (cond
+                     (zero? count) b
+                     (even? count) (iter
+                                     a
+                                     b
+                                     (+ (* p p ) (* q q))
+                                     (+ (* 2 p q) (* q q))
+                                     (/ count 2))
+                     :else (iter
+                             (+ (* b q) (* a q) (* a p))
+                             (+ (* b p) (* a q))
+                             p
+                             q
+                             (- count 1))))]
+    (fib-iter 1 0 0 1 n)
+    ))
+
+;; Euler's algorithm
+(defn gcd [a b]
+  (if (zero? b)
+    a
+    (gcd b (unchecked-remainder-int a b))))
+
+; 1.20
+;; Using Lame's theorem, illustrate the gcd process under normal order vs applicative order for gcd(206, 40)
+
+;; Lame's theorm says that if n is the kth fibonacci number and m is the smaller number in Euler's algoritm after k steps,
+;; then n >= m.
+;;
+;; Under applicative order evaluation, this call stack would look like this
+;; gcd(206, 40) -> gcd(40, 6) -> gcd(6, 4) -> gcd(4, 2) -> gcd(2, 0) -> 2
+;;
+;; this means there are 4 remainder evaluations for the given problem. If we change this to normal order, because the
+;; exression (remainder a b) replaces b, there end up being 18 different calls to remainder. Basically normal order
+;; never caches the result of an expression, instead evaluating it at ever point. Applicative order will eagerly evaluate
+;; then cache the value for use wherever the symbol is used.
+
+;; Fermat's Little Theorem
+;; If n is a prime and a is a positive number < n, then a^n is congruent to a modulo n
+
+(defn expmod [base exp m]
+  (cond
+    (zero? exp) 1
+    (even? exp)
+      (unchecked-remainder-int (Math/pow (expmod base (/ exp 2) m) 2) m)
+    :else
+      (unchecked-remainder-int (* base (expmod base (dec exp) m)) m)))
+
+(defn fermatTest [n]
+  (let [iter (fn it [n count]
+               (let [a (inc (rand-int (dec n)))]
+                 (cond
+                   (zero? count) true
+                   (= (unchecked-remainder-int a n) (expmod a n n)) (it n (dec count))
+                   :else false
+                   )
+                 ))
+        ]
+    (iter n 10)))
+
+; 1.21
+;; find the smallest divisor for 199, 1999, and 19999
+
+(defn smallestDivisor [n]
+  (let [iter (fn it [i div]
+     (cond
+       (>= i (Math/sqrt n)) div
+       (zero? (unchecked-remainder-int n i)) (it (inc i) (/ n i))
+       :else (it (inc i) div)
+       ))
+      ]
+  (iter 2 0)))
+
+; 1.22
+;; timed prime test
+
+
+(defn slowPrime? [n]
+  (if(zero? (smallestDivisor n))
+    true
+    false))
+
+(defn report-prime [timeSpent n]
+  (println " *** ")
+  (println n)
+  (println timeSpent))
+
+(defn timed-prime-test [n]
+  (newline)
+  (start-prime-test n (System/currentTimeMillis)))
+
+(defn start-prime-test [n start-time]
+  (if (slowPrime? n) (report-prime (- (System/currentTimeMillis) start-time) n)))
+
+(defn checkPrimesInRange [ls]
+  (if (seq ls)
+    (do
+      (timed-prime-test (first ls))
+      (checkPrimesInRange (rest ls)))))
+
+(defn oneK []
+  (->>
+    (range 1000 1100)
+    (filter odd?)
+    ))
+
+(defn tenK []
+  (->>
+    (range 10000 10100)
+    (filter odd?)
+    ))
+
+(defn hundredK []
+  (->>
+    (range 100000 100100)
+    (filter odd?)
+    ))
+
+
+; 1.23
+;; rewrite slow primes to only check odds if the number is odd
+(defn smallestDivisor [n]
+  (let [iter (fn it [i div]
+               (cond
+                 (>= i (Math/sqrt n)) div
+                 (zero? (unchecked-remainder-int n i)) (it (+ i 2) (/ n i))
+                 :else (it (+ i 2) div)
+                 ))
+        ]
+    (if (zero? (unchecked-remainder-int n 2)
+          2
+          (iter 3 0)
+      ))))
+
+; 1.24
+;; modify the timed primes code to use fast primes. Honestly this is an exercise in futility since my machine walks through
+;; the slow primes example in ~2ms for the slowest case
+
+; 1.25
+; is the fast and simple exponential equivalent to expmod
+(defn simple-exp-mod [base exp m]
+  (unchecked-remainder-int (fast-exp2 base exp m) m))
+
+;; I believe this should work and be eqivalent to the current expmod, but becase it isn't optimized with successive squaring to reduce
+;; the size of numbers, it will not perform as well. Bill the Lizzard backed this up in his explanation
+
+; 1.26
+;; converting expmod's square call to multiplication results in an O(n) process rather than O(log n)
+
+;; This ocurs because both sides of the multiplication are expanded out, whereas the first impleentation using
+;; exponentiation only builds out a single path, rendering it a normal linear recursive process. Having > 1 path leads to
+;; a tree recursive process, which means we're going to do significantly more work.
