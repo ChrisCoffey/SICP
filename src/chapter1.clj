@@ -440,3 +440,4 @@
 ;; This ocurs because both sides of the multiplication are expanded out, whereas the first impleentation using
 ;; exponentiation only builds out a single path, rendering it a normal linear recursive process. Having > 1 path leads to
 ;; a tree recursive process, which means we're going to do significantly more work.
+
