@@ -441,3 +441,68 @@
 ;; exponentiation only builds out a single path, rendering it a normal linear recursive process. Having > 1 path leads to
 ;; a tree recursive process, which means we're going to do significantly more work.
 
+;1.27
+;; Check the Carmichael numbers. To run this, just pass in the Fermat test. I've tweaked it to make 1.28 easier
+
+(defn carmichaels [f]
+  (let [nums [561, 1105, 1729, 2465, 2821, 6601, 8911]]
+    (println (map f nums))
+    ))
+
+;1.28
+; Miller-Rabin test
+;; This is a modified version of the Fermat test which cannot be tricked by the Carmichael numbers. It stats that
+;; for any a < , a^(n-1) is congruent to 1 modulo n
+
+(defn expmod2 [base exp m]
+  (cond
+    (zero? exp) 1
+    (even? exp)
+    (let [f (fn [x y]
+              (if
+                (and (not (or (= x 1) (= x (dec m)))) (= (rem (* x x) m) 1))
+              0
+              (rem (* x x) m)
+              ))]
+      (f (expmod2 base (/ exp 2) m ) m))
+    :else
+    (unchecked-remainder-int (* base (expmod2 base (dec exp) m)) m)))
+
+(defn miller-rabin [n]
+  (let [iter (fn it [n count]
+               (let [a (inc (rand-int (dec n)))]
+                 (cond
+                   (zero? count) true
+                   (= (unchecked-remainder-int a n) (expmod2 a n n)) (it n (dec count))
+                   :else false
+                   )
+                 ))
+        ]
+    (iter n 10)))
+
+;; shockingly this works fine. The let function in the middle of expmod2 says that if x is not 1 or equal to 1 less tha m and (x^2)/m has remainder 1
+
+; Summations and higher order procedures
+(defn sum [term a next b]
+  (if (> a b)
+    0
+    (+ (term a) (sum term (next a ) next b))
+ ))
+
+(defn integral [f a b dx]
+  (let [add-dx (fn [x]
+                 (+ x dx))
+        ]
+    (* (sum f (+ a (/ dx 2.0)) add-dx b) dx)
+    ))
+
+; 1.29
+;; Simpson's rule is a more accurate method of calculating integrals than the summation of x + dx + dx/2 ...
+(defn simpson-integral [f a b n]
+  (let [h (/ (- b a) n)
+        y (fn [x] (f(+ a (* x h))))
+        c (fn [x] (if
+                    (even? x) ( * 2 (y x))
+                    (* 4 (y x))))]
+    (* (/ h 3) (sum c 0 inc n))))
+
