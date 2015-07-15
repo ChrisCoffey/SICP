@@ -506,3 +506,164 @@
                     (* 4 (y x))))]
     (* (/ h 3) (sum c 0 inc n))))
 
+;1.30
+;; Simpson's rule with iterative recursion
+
+(defn sum [term a next b]
+  (let [f (fn iter [a result]
+            (if (> a b)
+              result
+              (iter (next a) (+ (term a) result))))
+            ]
+    (f a 0)))
+
+; 1.31
+;; a. higher order product recursive
+(defn product [term a next b]
+  (if (> a b)
+    1
+    (* (term a) (product term (next a) next b))
+    ))
+
+;; b. higher order product iterative
+(defn product [term a next b]
+  (let [f (fn iter [a result]
+            (if (> a b)
+              result
+              (iter (next a) (* (term a) result))))
+        ]
+    (f a 1)
+    ))
+
+; 1.32
+;; sum and product are both special cases of accumulate
+;a
+ (defn accumulate [combiner identity term a next b]
+  (if (> a b)
+    identity
+    (combiner (term a) (accumulate combiner identity term (next a) next b))
+    ))
+
+;b
+(defn accumulate [combiner identity term a next b]
+  (let [f (fn iter [a result]
+            (if (> a b)
+             result
+              (iter (next a) (combiner (term a) result))))
+        ]
+    (f a identity)
+    ))
+
+; 1.33
+;; filtered accumulate. Apparently this is
+(defn filter-accumulate [pred combiner identity term a next b]
+  (let [f (fn iter [a result]
+            (if (> a b)
+              result
+              (iter (next a) (if (pred a)
+                               (combiner (term a) result)
+                               result
+                               ))))
+        (f a identity)
+        ]))
+
+;a sum of primes squares
+(defn sumOfPrimes [a b]
+  (filter-accumulate (fn [x] (miller-rabin x)) + 0 (fn [x] (* x x)) a inc b))
+
+;b product of relative primes
+(defn relativePrimesLessThan [n]
+  (filter-accumulate (fn [x] (= (gcd x n) 1)) * 1 (fn [x] (x)) 1 inc n))
+
+; 1.34
+;; interpret (f f)
+(defn f [g]
+  (g 2))
+
+;; Applying f to itself should result in a stack overflow as the function call recurses infinitely
+
+
+;; note
+;; a zero is a case where, for a given function f, f(x) = 0
+;; a fixed point of a function f is a case where f(x) = x
+;;average damping is the process of averaging successive solutions to converge on a result
+;;; very useful in converging on fixed-points
+
+
+;1.35
+;; show that the golden ratio is a fixed point of the transformation x |-> 1 + (1/x)
+(defn fixed-point [f initialGuess]
+  (let [ tolerance 0.00001
+         close-enough? (fn [a b] (< (Math/abs (- a b)) tolerance))
+         try-it (fn t [guess]
+               (let [next (f guess)]
+                 (if (close-enough? guess next)
+                   next
+                   (t next))
+                 ))
+         ]
+    (try-it initialGuess)
+    ))
+;; note to self don't name things try, it's a protected word from java for try/catch (doh!)
+
+(fixed-point (fn [x] (+ 1 (/ 1 x))) 1.0)
+
+
+; 1.36
+;; log the steps in fixed-point
+(defn log-fixed-point [f initialGuess]
+  (let [ tolerance 0.00001
+         close-enough? (fn [a b] (< (Math/abs (- a b)) tolerance))
+         try-it (fn t [guess]
+                  (let [next (f guess)]
+                    (if (close-enough? guess next)
+                      next
+                      (do
+                        (println next)
+                        (t next)))
+                    ))
+         ]
+    (try-it initialGuess)
+    ))
+
+(log-fixed-point (fn [x] (/ (Math/log 1000) (Math/log x))) 2.0)
+
+(defn log-damp-fixed-point [f initialGuess]
+  (let [ tolerance 0.00001
+         close-enough? (fn [a b]
+                         (< (Math/abs (- a b)) tolerance))
+         average-damping (fn [x y]
+                           (/ (+ y x) 2))
+         try-it (fn t [guess]
+                  (let [next (f guess)]
+                    (if (close-enough? guess next)
+                      next
+                      (do
+                        (println next)
+                        (t (average-damping next guess)))
+                    )))
+         ]
+    (try-it initialGuess)
+    ))
+
+(log-damp-fixed-point (fn [x] (/ (Math/log 1000) (Math/log x))) 2.0)
+
+;; average damping significantly reduces the number of steps to reach the target. Very cool
+
+; 1.37
+;; k-term finite continued fraction. terminate an infinite continued fraction expansion after some number k terms
+
+(defn cont-frac [n d k]
+  (let [f (fn iter [a]
+            (if (= a k)
+              (/ (n a) (d a))
+              (/ (n a) (+ (d a) (iter (inc a))))
+              ))
+        ]
+    (f 0))
+  )
+
+(cont-frac (fn [x] 1.0) (fn [x] 1.0) 10)
+;; 10 iterations is roughly enough to find 1/Ф out to 4 decimal places
+
+; 1.38
