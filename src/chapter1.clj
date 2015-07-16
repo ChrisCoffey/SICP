@@ -667,3 +667,97 @@
 ;; 10 iterations is roughly enough to find 1/Ф out to 4 decimal places
 
 ; 1.38
+;; Euler's e-2 continued fraction
+(cont-frac (fn [x] 1.0) (fn [x]
+                          (if (= (rem x 3) 2)
+                            (* (int (/ (inc x) 3)) 2)
+                            1))
+  10)
+
+; 1.39
+;; tangent continued fraction
+(defn tan-cf [x k]
+  (let [ n (fn [y] (if (= 1 y) x (* x x)))
+         d (fn [x] (+ x (dec x)))
+         f (fn iter [a]
+            (if (= a k)
+              (/ (n a) (d a))
+              (/ (n a) (- (d a) (iter (inc a))))
+              ))
+        ]
+    (f 1)
+    ))
+
+;; I'm not sure about the formula above
+
+(defn average [x y] (/ (+ x y) 2))
+
+(defn avg-damp [f]
+  (fn [x] (average x (f x))))
+
+(defn sqrt [x]
+  (fixed-point
+    (avg-damp (fn [y] (/ x y)))
+    1.0)
+  )
+
+(defn cube-root [x]
+  (fixed-point
+    (avg-damp (fn [y] (/ x (* y y))))
+    1.0
+    ))
+
+
+;; If x -> g(x) is differentiable, then the zero of g(x) (g(x) = 0) is a fixed point of x -> f(x) where
+;; f(x) = x - g(x)/ D(g(x))
+
+(def dx 0.00001)
+(defn deriv [g]
+  (fn [x]
+    (/
+      (- (g (+ x dx)) (g x))
+      dx)
+    ))
+
+(defn netwton-transform [g]
+  (fn [x] (- x (/ (g x) ((deriv g) x)))))
+
+(defn netwon-method [g guess]
+  (fixed-point (netwton-transform g) guess))
+
+
+; 1.40
+;; cubics
+(defn cubic [a b c]
+  (fn [x] (+ (* x x x) (* a (* x x)) (* b x) c)))
+
+(netwon-method (cubic 1 2 3) 1)
+;; Pretty mechanical transformation. But it does find the fixed point.
+
+
+; 1.41
+;; double application
+(defn doubleApply [f] (comp f f))
+(defn double-other [f]
+  (fn [x] (f (f x))))
+
+; 1.42
+;; write compose
+(defn compose [f g]
+  (fn [x] (f (g x))))
+
+; 1.43
+;; repeated application
+(defn repeated [f x]
+  (fn [a]
+    (let [r (fn rec [i y]
+              (if (zero? i)
+                y
+                (rec (dec i) (f y))))
+          ]
+      (r x a)
+      ))
+  )
+
+
+
