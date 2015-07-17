@@ -55,6 +55,9 @@
     )
   )
 
+(defn improve [guess x]
+  (average guess (/ x guess)))
+
 (defn bad-good-enough? [guess prev]
   (if (< (abs (- guess prev )) 0.1)
   true
@@ -760,4 +763,42 @@
   )
 
 
+;1.44
+;; smoothing function
+(defn smooth [f dx]
+  (fn [x] (/ (+ (f x) (f (- x dx)) (f (+ x dx))) 3)))
 
+(defn n-fold-smooth [f dx n]
+  (repeated ((smooth f dx) n)))
+
+; 1.45
+;; compute nth roots using average damping
+
+(defn nth-root [n]
+  (fixed-point
+    (repeated avg-damp (fn [x] (/ n (Math/pow x (dec n))))) 1.0))
+
+;; note this is an incomplete solution
+
+; 1.46
+;; iterative improvement function
+(defn iterative-imporove [f p]
+  (fn try-do [guess]
+    (if (p guess)
+      guess
+      (try-do (f guess))))
+  )
+
+(defn sqrt [x]
+  ((iterative-improve
+     (fn [guess] (good-enough? guess x))
+     (fn [guess] (improve guess x))) 1.0)
+  )
+
+
+(defn fixed-point [f g]
+  ((iterative-improve
+     (fn [guess] (good-enough? guess (f guess)))
+     f)
+   g)
+  )
