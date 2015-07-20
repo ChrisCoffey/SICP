@@ -204,5 +204,205 @@
 (defn width [i]
   (/ (- (upper-bound i) (lower-bound i)) 2))
 
-;; addition and subtrction deal directly with the same positoins between two intervals a & b, so taking the sum or difference
-;; between a & b is equivalent to 2(w(a) + w(b))
+;; addition is equivalent to a= 2( w(i) + w(i`)); lower-bound(i) + a, upper-bound(i) + a
+;; subtraction is equivalent to a= 2( w(i) + w(i`)); lower-bound(i) - w(i`), upper-bound
+;; multiply and divide both com
+
+; 2.10
+;; error to go through zero
+(defn divide-interval [x y]
+  (assert (or
+            (and (pos? (lower-bound x)) (pos? (upper-bound x)))
+            (and (neg? (lower-bound x)) (neg? (upper-bound x)))
+            )
+    )
+  (multiply-interval x
+    (interval
+      (/ 1.0 (upper-bound y))
+      (/ 1.0 (lower-bound y))
+  )))
+
+; 2.11
+;; efficient multiplication (so much typing)
+(defn multiply-interval' [x y]
+  (let [ux (pos? (upper-bound x))
+        lx (pos? (lower-bound x))
+        uy (pos? (upper-bound y))
+        ly (pos? (lower-bound y))
+         ]
+    (cond
+      (and ux (not lx) uy ly) ; [+ -], [+ +]
+        (interval
+          (* (lower-bound x) (upper-bound y)) (* (upper-bound x) (upper-bound y)))
+      (and ux lx uy (not ly)) ; [+ +], [+ -]
+        (interval
+          (* (upper-bound x) (lower-bound y)) (* (upper-bound x) (upper-bound y)))
+      (and (not ux) (not lx) uy ly) ; [- -], [+ +]
+        (interval
+          (* (lower-bound x) (upper-bound y)) (* (upper-bound x) (lower-bound y)))
+      (and (not ux) (not lx) uy (not ly)) ; [- -], [+ -]
+        (interval
+          (* (lower-bound x) (upper-bound y)) (* (lower-bound x) (lower-bound y)))
+      (and ux lx (not uy) (not ly)) ; [+ +], [- -]
+        (interval
+          (* (upper-bound x) (lower-bound y)) (* (lower-bound x) (upper-bound y)))
+      (and ux (not lx) (not uy) (not ly)) ; [+ -], [- -]
+        (interval
+          (* (upper-bound x) (lower-bound y)) (* (lower-bound x) (lower-bound y)))
+      (and (not ux) (not lx) (not uy) (not ly)) ; [- -], [- -]
+        (interval
+          (* (lower-bound x) (lower-bound y)) (* (upper-bound x) (upper-bound y)))
+      (and ux (not lx) uy (not ly)) ; [+ -], [+ -]
+        (interval
+          (min (* (upper-bound x) (lower-bound y)) (* (lower-bound x) (upper-bound y)))
+          (max (* (lower-bound x) (lower-bound y)) (* (upper-bound x) (upper-bound y))))
+      :else; [+ +], [+ +]
+        (interval
+          (* (lower-bound x) (lower-bound y)) (* (upper-bound x) (upper-bound y)))
+      )
+    ))
+
+; 2.12
+;; percentage constructor & selector
+(defn interval-center-width [c w]
+  (interval (- c w) (+ c w)))
+
+(defn center [i]
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+
+(defn width [i]
+  (/ (- (upper-bound i) (lower-bound i)) 2))
+
+(defn interval-center-pct [c p]
+  (let [w (* c p)]
+    (interval-center-width c w)
+    ))
+
+(defn pct [i]
+  (/ (width i) (center i)))
+
+; 2.13
+;; aproximate the center tolerance, assuming all numbers are positive
+;; with really small percentage thresholds, adding them together gives a rough aproximation of the multiplied tolearance
+(def a (interval-center-pct 10 0.001))
+(def b (interval-center-pct 10 0.0001))
+(pct (multiply-interval a b)) ; should be .0011
+
+; 2.14
+;;parallel formulae returns different results based on equivalent algebraic structures
+(defn par1 [r1 r2]
+          (divide-interval (multiply-interval' r1 r2) (add-interval r1 r2)))
+
+(defn par2 [r1 r2]
+  (let [one (interval 1 1)]
+    (divide-interval one (add-interval (divide-interval one r1) (divide-interval one r2)))
+    ))
+
+(def pctA (pct (divide-interval a a)))
+(def pctAB (pct (divide-interval a b)))
+;; percentage is a + b, a + a, whereas a + a should likely be a
+
+; 2.15
+;; as noted above, because a/a results in a percentage width of 2a, interval divison should avoid any cases where
+;; the same variable is used twice. This is a bizzare consequence of the fact that we're actually multiplying x by
+;; the reciprocal of y. Basically interval division a/a != 1
+
+; 2.16
+;; Due to the Dependency problem, you can't create a universal solution to interval division. This is because if an
+;; interval occurs multiple times and is taken independently each time then it is also expanded each time. The best solution
+;; is to create equivalent algebraic statements to reach the same goal.
+;; https://en.wikipedia.org/wiki/Interval_arithmetic#Dependency_problem
+
+;2.17
+;; define last-pair on a list
+(defn last-pair [ls]
+  (if (not (next ls))
+    (first ls)
+    (last-pair (next ls))
+    ))
+
+; 2.18
+;; define reverse
+(defn reverse-list [ls]
+  (let [r (fn iter [a b]
+            (if (not (next a))
+              (cons (first a) b)
+              (iter (next a) (cons (first a) b))
+              ))]
+    (r ls ())
+    ))
+
+; 2.19
+;; update the coin changing procedure to take a list of coins rather than hardcoded denominations
+(defn except-first-denom [ls] (next ls))
+(defn first-denom [ls] (first ls))
+(defn no-more? [ls] (empty? ls))
+
+(defn coin-change [amount coins]
+  (cond
+    (zero? amount) 1
+    (or (neg? amount) (no-more? coins)) 0
+    :else (+
+            (coin-change amount (except-first-denom coins))
+            (coin-change (- amount (first-denom coins)) coins))
+    ))
+
+; ordering doesn't make a difference because we're ultimately going to walk the coin list to exhaustion for each value
+
+; 2.20
+;; same parity
+(defn parity? [i & is]
+  (let [p (even? i)]
+    (filter (fn [e] (= (even? e) p)) is )))
+
+; an impl without using the library filter
+(defn filter-rec [p ls]
+  (let [f (fn iter [a acc]
+            (if (empty? a)
+              (reverse acc)
+              (if (p (first a))
+                (iter (next a) (cons (first a) acc))
+                (iter (next a) acc))))
+        ]
+    (f ls ())
+    ))
+
+(defn parity?' [i & is]
+  (let [p (even? i)]
+    (filter-rec (fn [e] (= (even? e) p)) is )))
+
+; 2.21
+;;square the lists of numbers
+;a
+(defn square-list [ls]
+  (if (empty? ls)
+    ()
+    (cons (* (first ls) (first ls)) (square-list (next ls)))
+    ))
+
+(defn square-list [ls]
+  (map (fn [x] (* x x)) ls)
+  )
+
+; 2.22
+;; because you walk from list a -> b, b is constructed in reverse since the first element of a is cons'd to (), 2nd element
+;; to 1st, etc... Basicaly, the list is constructed in reverse. No matter how the cons is re-ordered elements are still
+;; walked in the same order. To avoid this you need to reverse the list at the end
+
+; 2.23
+;; implement for-each, a left to right function appliation that throws away the results
+(defn for-each' [ls f]
+  (map f ls))
+
+
+(defn for-each' [ls f]
+  (let [r (fn iter [l]
+        (if (empty? l)
+          true
+          (do
+            (f (first l))
+            (iter (next l))
+          )))
+        ]
+    (r ls)
+    ))
