@@ -391,9 +391,6 @@
 
 ; 2.23
 ;; implement for-each, a left to right function appliation that throws away the results
-(defn for-each' [ls f]
-  (map f ls))
-
 
 (defn for-each' [ls f]
   (let [r (fn iter [l]
@@ -405,4 +402,76 @@
           )))
         ]
     (r ls)
+    ))
+
+; 2.24
+(def l (list 1 (list 2 (list 3 4))))
+
+;; box
+;; [1] [cdr] -> [2, cdr] -> [3, 4, nil]
+
+;; tree
+;;               1
+;;              /
+;;             2
+;;            /\
+;;           3  4
+
+
+; 2.25
+;extract 7 from the lists
+(def a (list 1 3 (list 5 7) 9))
+( second (first (next (next a))))
+
+(def b (list (list 7)))
+(first (first b))
+
+(def c (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))
+(second (second (second (second (second (second c))))))
+
+; 2.26
+;; append cons and such
+(def x (list 1 2 3))
+(def y (list 4 5 6))
+
+(concat x y) ; (1 2 3 4 5 6)
+(cons x y) ; ((1 2 3 ) 4 5 6)
+(list x y); ((1 2 3) (4 5 6))
+
+; 2.27
+;; deep reverse
+(defn deep-reverse-list [ls]
+  (let [ g (fn [x] (if (and (list? x) (not (nil? x))) (deep-reverse-list x) x))
+         r (fn iter [a b]
+            (if (not (next a))
+              (cons (g (first a)) b)
+              (iter (next a)
+                (cons (g (first a)) b))
+              ))]
+    (r ls ())
+    ))
+
+; 2.28
+;; create fringe which takes a tree in list form and returns a list of leaf elements in l -> r order
+(defn fringe [ls]
+    (cond
+      (nil? ls) ()
+      (not (list? ls)) (list ls)
+      :else (concat (fringe (first ls)) (fringe (next ls)))
+      )
+  )
+
+; 2.29
+;; Binary mobile (aka calder)
+(defn make-mobile [l r] (list l r))
+(defn make-mobile-branch [length structure] (list length structure))
+
+(defn left-branch [mobile] (first mobile))
+(defn right-branch [mobile] (second mobile))
+(defn branch-length [branch] (first branch))
+(defn branch-structure [branch] (second branch))
+
+(defn total-weight [mobile]
+  (cond
+
     ))
