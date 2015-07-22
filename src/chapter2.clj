@@ -472,6 +472,43 @@
 (defn branch-structure [branch] (second branch))
 
 (defn total-weight [mobile]
-  (cond
+  (let [weight (fn [br] (if (number? br) br (total-weight br)))]
+  (+  (weight (branch-structure (left-branch mobile))) (weight (branch-structure (right-branch mobile))))
+  ))
 
+
+(defn balanced? [m]
+  (let [balanced-branch? (fn [b] (if (number? (branch-structure b)) true (balanced? (branch-structure b))))
+        weight (fn [b] (if (number? (branch-structure b)) (branch-structure b) (total-weight (branch-structure b))))
+        tourque (fn [b] (* (branch-length b) (weight b)))
+        left (left-branch m)
+        right (right-branch m)
+         ]
+      (and
+        (balanced-branch? left)
+        (balanced-branch? right)
+        (= (tourque left) (tourque right))
+        )
+      )
+  )
+
+;; I'd only need to update the accessors. The rest of the logic is hidden away above those.
+
+
+; 2.30
+(defn square-tree [tree]
+  (cond
+    (nil? tree) nil
+    (not (pair? tree)) (* tree tree)
+    :else (list (square-tree (first tree) (square-tree next tree)))
     ))
+
+(defn pair? [ls] (= (count ls) 2))
+
+(defn square-tree' [tree]
+  (map (fn [t] (if (pair? t))
+         (square-tree t)
+         (* t t)
+         )))
+
+
