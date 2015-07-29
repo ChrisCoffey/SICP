@@ -503,12 +503,85 @@
     :else (list (square-tree (first tree) (square-tree next tree)))
     ))
 
-(defn pair? [ls] (= (count ls) 2))
+(defn pair? [ls] (and (list? ls) (= (count ls) 2)))
 
 (defn square-tree' [tree]
-  (map (fn [t] (if (pair? t))
-         (square-tree t)
+  (map (fn [t] (if (pair? t)
+         (square-tree' t)
          (* t t)
-         )))
+         )) tree))
 
+(def ts (list (list (list 8 7) 9) (list 2 (list (list 1 8) (list 3 8)))))
+
+; 2.31
+;; tree-map
+
+(defn tree-map [f tree]
+  (map (fn [t] (if (pair? t) (tree-map f t) (f t))) tree))
+
+(defn square-tree'' [tree] (tree-map (fn [x] (* x x)) tree))
+
+; 2.32
+;; powersets. Create the powersets of lists
+(defn power-sets [s]
+  (if (nil? s)
+    (list ())
+    (let [rest (power-sets (next s))]
+      (concat rest (map #(list (first s) %) rest)))
+      ))
+
+;2.33
+;; fill in the missing parts of these definitions in terms of accumulate
+(defn accumulate [op acc ls]
+  (if (empty? ls)
+    acc
+    (op (first ls) (accumulate op acc (rest ls)))))
+
+(defn map' [p ls]
+  (accumulate #((cons (p %1) %2)) () ls))
+
+(defn append [ls rs]
+  (accumulate cons rs ls))
+
+(defn length [ls]
+  (accumulate inc 0 ls))
+
+; 2.34
+;; polynomial evaluation via Horner's rule
+;; It works by starting with an, multiply by x, add a(n-1), multiply by x, ... until a0
+(defn horner-eval [x coef-seq]
+  (accumulate
+    (fn [this-coef higher-terms] (+ this-coef (* x higher-terms)))
+    0
+    coef-seq))
+
+
+; 2.35
+;; redefine count-leaves in terms of accumulate
+(defn count-leaves [t]
+  (accumulate + 0 (map (fn [x] 1) (fringe t))))
+
+; 2.36
+;; accumulate-n, or zip-fold
+(defn accumulate-n [op acc seqs]
+  (if (empty? (first seqs))
+    ()
+    (cons (accumulate op acc (map first seqs))
+      (accumulate-n op acc (map rest seqs)))))
+
+; 2.37
+;; matrix math
+;; given matrix:
+;;
+;; 1 2 3 4
+;; 4 5 6 6
+;; 6 7 8 9
+
+(def m (list (list 1 2 3 4) (list 4 5 6 6) (list 6 7 8 9)))
+
+(defn dot-product [v w]
+  (accumulate + 0 (map * v w)))
+
+(defn matrix-*-vector [m v]
+  (map #(dot-product v %) m))
 
