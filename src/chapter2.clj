@@ -585,3 +585,66 @@
 (defn matrix-*-vector [m v]
   (map #(dot-product v %) m))
 
+; transpose returns the matrix n, where n(i j) = m(j i)
+(defn transpose [mat]
+  (accumulate-n cons () mat))
+
+; matrix multiplication is the vector product of each column concatted together
+(defn matrix-*-matrix [m n]
+  (let [cols (transpose n)]
+    (map #(matrix-*-vector cols %) m)))
+
+; 2.38
+;;fold right and left
+(defn fold-left [op acc ls]
+  (let [f (fn iter [result tail]
+            (if (empty? tail)
+              result
+              (iter (op result (first tail)) (rest tail))))
+        ]
+    (f acc ls)
+    ))
+
+;; operations should be associative for fold-left & right to produce the same result
+
+; 2.39
+;; implement reverse in terms of fold left and right
+(defn reverseL [ls]
+  (fold-left #(cons %2 %) () ls))
+
+(defn reverseR [ls]
+  (accumulate #(concat %2 (list %)) () ls))
+
+
+; 2.40
+;; unique pairs
+(defn unique-pairs [n]
+   (mapcat
+     (fn [x] (map #(list % x) (range 1 x)))
+     (range 1 n))
+  )
+
+(defn prime-sum-pairs [n]
+  (map #(cons (+ (first %) (second %)) %)
+    (filter #(prime? (+ (first %) (second %)))
+      (unique-pairs n))
+  ))
+
+; 2.41
+;; ordered triples of i,j, k < n that sum to s
+(defn unique-triples [n]
+  (mapcat
+    (fn [k]
+      (mapcat (fn [j]
+        (map #(list % j k) (range 1 j)))
+        (range 1 k)
+        ))
+    (range 1 n)
+    )
+  )
+
+(defn triple-sums [n s]
+  (filter #(= (fold-left + 0 %) s) (unique-triples n)))
+
+; 2.42
+;; the eight queens
