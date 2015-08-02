@@ -780,6 +780,160 @@
 (defn xcor-vect [v] (first v))
 (defn ycor-vect [v] (second v))
 
+(defn vect-combine [op]
+  (fn [va vb] 
+    (make-vect (op (xcor-vect va) (xcor-vect vb)) (op (ycor-vect va) (ycor-vect vb)))))
+
+(defn add-vect [va vb] ((vect-combine +) va vb))
+(defn sub-vect [va vb] ((vect-combine -) va vb))
+(defn scale-vect [coef v] ((vect-combine *) v (make-vect coef coef)))
+
+;2.47
+;; Provide a frame implementation based on the constructors below
+
+;a
+(defn make-frame [origin edge1 edge2] (list origin edge1 edge2))
+(defn frame-origin [frame] (first frame))
+(defn frame-edge1 [frame] (second frame))
+(defn frame-edge2 [frame] (nth frame 2))
+
+;b
+;; For all intents and purposes the cons implementation is identical. Only exception is that it uses car & cdr instead of first etc...
+
+;;Painters
+
+  (defn segments->painter [segments]
+    (fn [frame]
+      (for-each'
+        #((draw-line
+            ((frame-coord-map frame) (start-segment %))
+            ((frame-coord-map frame) (end-segment %))))
+        segments)))
+
+; 2.48
+;; Create constructor and accessors for line segments
+(defn make-segment [start-vector end-vector] (list start-vector end-vector))
+(defn segment-start [segment] (first segment))
+(defn segment-end [segment] (last segment))
+
+; 2.49
+;; Define four primitive painters in terms of segments->painter
+  ;a
+  (defn outline-painter [frame]
+    (let [w (make-segment (frame-origin frame) (frame-edge1 frame))
+          s (make-segment (frame-origin frame) (frame-edge2 frame))
+          n (make-segment (frame-edge1 frame) (add-vect (frame-edge2 frame) (frame-edge1 frame)))
+          e (make-segment (frame-edge2 frame) (add-vect (frame-edge2 frame) (frame-edge1 frame)))
+          ]
+      (segments->painter `(w s n e))
+      ))
+
+;b
+  (defn x-painter [frame]
+    (let [o->tr (make-segment (frame-origin frame) (make-segment (frame-edge2 frame) (add-vect (frame-edge2 frame) (frame-edge1 frame))))
+          tl->br (make-segment (frame-edge1 frame) (frame-edge2 frame))
+          ]
+      (segments->painter `(o->tr tl->br))
+      ))
+
+;c
+  (defn diamond-painter [frame]
+    (let [w (scale-vect 0.5 (frame-edge1 frame))
+          s (scale-vect 0.5 (frame-edge2 frame))
+          n (scale-vect 0.5 (add-vect (frame-edge2 frame) (frame-edge1 frame)))
+          e (scale-vect 0.5 (add-vect (frame-edge2 frame) (frame-edge1 frame)))
+          wn (make-segment w n)
+          ne (make-segment n e)
+          es (make-segment e s)
+          sw (make-segment s w)
+          ]
+      (segments->painter `(wn ne es sw))
+      ))
+
+;d wave-painter
+; todo need to think about how to structure this
 
 
+; example transform painter
+(defn transform-painter [painter origin corner1 corner2]
+  (fn [frame]
+    (let [m (frame-coord-map frame)]
+      (let [new-origin (m origin)]
+        (painter
+          (make-frame new-origin
+                      (sub-vect (m corner1) new-origin)
+                      (sub-vect (m corner2) new-origin))
+          )))))
+
+(defn flip-vert [painter]
+  (transform-painter painter
+                     (make-vect 0.0 1.0)
+                     (make-vect 1.0 1.0)
+                     (make-vect 0.0 0.0)))
+
+(defn shrink-to-up-right [painter]
+  (transform-painter painter
+                     (make-vect 0.5 0.5)
+                     (make-vect 1.0 0.5)
+                     (make-vect 0.5 1.0)))
+
+(defn rotate90 [painter]
+  (transform-painter painter
+                     (make-vect 1.0 0.0)
+                     (make-vect 1.0 1.0)
+                     (make-vect 0.0 0.0)))
+
+(defn squish-inwards [painter]
+  (transform-painter painter
+                     (make-vect 0.0 0.0)
+                     (make-vect 0.65 0.65)
+                     (make-vect 0.35 0.35)))
+
+(defn beside [painter1 painter2]
+  (let [split-point (make-vect 0.5 0.0)]
+    (let [paint-left (transform-painter painter1
+                                        (make-vect 0.0 0.0) ;; origin
+                                        split-point         ;; middle of the x axis
+                                        (make-vect 0.0 1.0)) ;; top left corner
+          paint-right (transform-painter painter2
+                                         split-point
+                                         (make-vect 1.0 0.0)
+                                         (make-vect 0.5 1.0))
+          ]
+      (fn [frame]
+        (paint-left frame)
+        (paint-right frame))
+  )))
+
+; 2.50
+;; implement some simple painter transformations
+(defn flip-horiz [painter]
+  (transform-painter painter
+                     (make-vect 1.0 0.0)
+                     (make-vect 0.0 0.0)
+                     (make-vect 1.0 1.0)))
+
+(defn rotate180 [painter]
+   ((comp rotate90 rotate90) painter)
+
+(defn rotate270 [painter]
+  ((comp rotate90 rotate180) painter))
+
+; 2.51
+;; implement below for painters
+  (defn below [painter1 painter2]
+    (let [split-point (make-vect 0.0 0.5)]
+      (let [paint-bottom (transform-painter painter1
+                                             (make-vect 0.0 0.0)
+                                             (make-vect 1.0 0.0)
+                                             split-point)
+            paint-top    (transform-painter painter2
+                                             split-point
+                                             (make-vect 1.0 0.5)
+                                             (make-vect 0.0 0.5))
+            ]
+        (fn [frame]
+          (paint-bottom frame)
+          (paint-top frame))
+        )))
 
