@@ -648,3 +648,138 @@
 
 ; 2.42
 ;; the eight queens
+
+(def empty-board [])
+
+(defn adjoin-position [r k rest-of-queens]
+  (cons r rest-of-queens))
+
+(defn safe? [k board] 
+  (let [isSafe? (fn iter [n ls]
+                 (cond
+                   (empty? ls) true 
+                   (= (first ls) (first board)) false 
+                   (= (first ls) (+ (first board) n)) false 
+                   (= (first ls) (- (first board) n)) false 
+                   :else (iter (inc n) (rest ls)))
+                 )
+        ]
+      (isSafe? 1 (rest board))
+    ))
+
+
+(defn queens [board-size]
+  (let [queen-cols (fn iter [k]
+                     (if (zero? k)
+                       (list empty-board)
+                       (filter
+                         (fn [positions] (safe? k positions))
+                         (mapcat
+                           (fn [rest-of-queens]
+                             (map (fn [new-row]
+                                    (adjoin-position new-row k rest-of-queens))
+                                  (range 1 (inc board-size))))
+                           (iter (dec k))))))
+        ]
+    (queen-cols board-size)
+    ))
+
+; 2.43
+;; Why does this version of queens run slower?
+
+
+(defn queens [board-size]
+  (let [queen-cols (fn iter [k]
+                     (if (zero? k)
+                       (list empty-board)
+                       (filter
+                         (fn [positions] (safe? k positions))
+                        ;; ============================
+                         (mapcat
+                           (fn [new-row]
+                             (map (fn [rest-of-queens]
+                                    (adjoin-position new-row k rest-of-queens))
+                           		(iter (dec k))))
+                              (range 1 (inc board-size))))))
+        ]                ;; ============================
+    (queen-cols board-size)
+    ))
+
+; flatmapping across the board first changes this from tail to tree recursive, resulting in T^k time.
+
+; 2.44
+;; define an up-split procedure, as used by corner-split
+(defn below [a b] :new-painter)
+(defn beside [a b] :new-painter)
+
+
+(defn right-split [painter n]
+  (if (zero? n)
+    painter
+    (let [smaller (right-split painter (dec n))]
+      (beside painter (below smaller smaller))
+      )))
+
+(defn corner-split [painter n]
+  (if (zero? n)
+    painter
+    (let [up (up-split painter (dec n))
+          right (right-split painter (dec n))
+          (let [ (top-left (beside up up))
+                (bottom-right (below right right))
+                (corner (corner-split painter (dec n)))
+                ]
+            (beside (below painter top-left)
+                    (below bottom-right corner)))
+         ])))
+
+(defn up-split [painter n]
+  (if (zero? n)
+    painter
+    (let [smaller (up-split painter (dec n))]
+      (below painter (beside smaller smaller)
+      ))))
+
+;; example hof with painter ops
+(defn square-of-four [tl tr bl br]
+  #(let [top (beside (tl %) (tr %))
+         bottom (beside (bl %) (br %))]
+     (below bottom top)
+     ))
+
+; 2.45
+;; define a general splitting operation
+(defn split [initial child-direction]
+  (fn f [painter n] 
+    (if (zero? n)
+      painter
+      (let [smaller (f painter (dec n))]
+        (initial painter (child-direction smaller smaller))
+      ))
+    ))
+
+
+
+;; example of frame coordinate map
+(defn frame-coord-map [frame]
+  (fn [v]
+    (add-vect
+      (origin-frame frame)
+      (add-vect (scale-vect 
+                  (xcor-vect v)
+                  (edge-1-frame frame))
+                (scale-vect
+                  (ycor-vect v)
+                  (edge2-frame frame))
+                ))))
+
+; 2.46
+;; Implement a vector from the origin point
+
+(defn make-vect [x y] (list x y))
+(defn xcor-vect [v] (first v))
+(defn ycor-vect [v] (second v))
+
+
+
+
