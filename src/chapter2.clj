@@ -720,18 +720,7 @@
       (beside painter (below smaller smaller))
       )))
 
-(defn corner-split [painter n]
-  (if (zero? n)
-    painter
-    (let [up (up-split painter (dec n))
-          right (right-split painter (dec n))
-          (let [ (top-left (beside up up))
-                (bottom-right (below right right))
-                (corner (corner-split painter (dec n)))
-                ]
-            (beside (below painter top-left)
-                    (below bottom-right corner)))
-         ])))
+
 
 (defn up-split [painter n]
   (if (zero? n)
@@ -758,7 +747,18 @@
       ))
     ))
 
-
+(defn corner-split [painter n]
+  (if (zero? n)
+    painter
+    (let [up (up-split painter (dec n))
+          right (right-split painter (dec n))
+          (let [ top-left (beside up up)
+                bottom-right (below right right)
+                corner (corner-split painter (dec n))
+                ]
+            (beside (below painter top-left)
+                    (below bottom-right corner)))
+         ])))
 
 ;; example of frame coordinate map
 (defn frame-coord-map [frame]
@@ -914,7 +914,7 @@
                      (make-vect 1.0 1.0)))
 
 (defn rotate180 [painter]
-   ((comp rotate90 rotate90) painter)
+   ((comp rotate90 rotate90) painter))
 
 (defn rotate270 [painter]
   ((comp rotate90 rotate180) painter))
@@ -936,4 +936,67 @@
           (paint-bottom frame)
           (paint-top frame))
         )))
+
+; 2.52
+;; modify the various levels (stratified design) of the painter system
+
+;a wave painter
+
+
+;b Change corner-split pattern
+(defn corner-split [painter n]
+  (if (zero? n)
+    painter
+    (let [up (up-split painter (dec n))
+          right (right-split painter (dec n))
+          (let [corner (corner-split painter (dec n))]
+            (beside (below painter up)
+                    (below right corner)))
+         ])))
+
+;c change the square-limit structure
+
+
+; 2.53
+;;what gets printed
+
+(list 'a 'b 'c)
+; (a b c)
+
+(list (list 'george))
+; (george)
+
+(cdr '((x1 x2) (y1 y2)))
+; (y1 y2)
+
+(cadr '((x1 x2) (y1 y2)))
+; x2
+
+(pair? (first '(a short list)))
+; false
+
+(memq 'red '((red shoes) (blue socks)))
+; nil
+
+(memq 'red '(red shoes blue socks))
+; (red shoes blue socks)
+
+; 2.54
+;;list equality
+(defn list-equal [xs ys]
+  (if (empty? xs)
+    (empty? ys)
+    (let [xh (first xs)
+          yh (first ys)]
+      (and (if (and (list? xh) (list? yh))
+             (list-equal xh yh)
+             (= xh yh))
+           (list-equal (rest xs) (rest ys)))
+    )))
+
+; 2.55
+;; Why does (first ''abracadabra) print quote?
+
+;; ' is shorthand for the quote procedure, so the quote of quote is '(quote ....). THis is why ''abcr... turns into '(quote abcdrea), and why first pulls out the quote literal
+
 
