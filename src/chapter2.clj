@@ -1000,3 +1000,71 @@
 ;; ' is shorthand for the quote procedure, so the quote of quote is '(quote ....). THis is why ''abcr... turns into '(quote abcdrea), and why first pulls out the quote literal
 
 
+; Symbolic diferentiation
+(defn triple? [col] (= (count col) 3))
+
+(defn variable? [e] (symbol? e))
+(defn same-variable? [a b] (and (variable? a) (variable? b) (= a b)))
+(defn =number? [exp num] (and (number? exp) (= exp num)))
+
+(defn make-sum [l r]
+  (cond
+    (=number? l 0) r
+    (=number? r 0) l
+    (and (number? l) (number? r)) (+ l r)
+    :else (list '+ l r)
+    ))
+(defn addend [sum] (second sum))
+(defn augend [sum] (nth sum 2))
+(defn sum? [x] (and (triple? x) (= (first x) '+)))
+
+(defn make-product [l r]
+  (cond
+    (or (=number? l 0) (=number? r 0)) 0
+    (=number? l 1) r
+    (=number? r 1) l
+    (and (number? l) (number? r)) (* l r)
+    :else (list '* l r)
+  ))
+(defn multiplier [product] (second product))
+(defn multiplicand [product] (nth product 2))
+(defn product? [x] (and (triple? x) (= (first x) '*)))
+
+
+
+
+; 2.56
+;; Extend deriv to support this rule: d(u^n)/ dx = nu^(n-1) * (du/dx)
+(defn make-exponentiation [num term]
+  (cond
+    (=number? term 0) 1
+    (=number? term 1) num
+    :else (list '** num term)
+    ))
+(defn base [exp] (second exp))
+(defn exponent [exp] (nth exp 2))
+(defn exponent? [x] (and (triple? x) (= (first x) '** )))
+
+(defn deriv [exp var]
+  (cond
+    (number? exp) 0
+    (variable? exp)
+      (if (same-variable? exp var)
+        1
+        0)
+    (sum? exp)
+      (make-sum
+        (deriv (addend exp) var)
+        (deriv (augend exp) var))
+    (product? exp)
+      (make-sum
+        (make-product (multiplier exp)
+                      (deriv (multiplicand exp) var))
+        (make-product (deriv (multiplier exp) var)
+                      (multiplicand exp))
+        )
+    (exponent? exp)
+      (make-exponentiation
+        ())
+    :else nil
+    ))
