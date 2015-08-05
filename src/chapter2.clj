@@ -1016,7 +1016,7 @@
     ))
 (defn addend [sum] (second sum))
 (defn augend [sum] (nth sum 2))
-(defn sum? [x] (and (triple? x) (= (first x) '+)))
+(defn sum? [x] (= (first x) '+))
 
 (defn make-product [l r]
   (cond
@@ -1028,7 +1028,7 @@
   ))
 (defn multiplier [product] (second product))
 (defn multiplicand [product] (nth product 2))
-(defn product? [x] (and (triple? x) (= (first x) '*)))
+(defn product? [x] (= (first x) '*))
 
 
 
@@ -1039,6 +1039,7 @@
   (cond
     (=number? term 0) 1
     (=number? term 1) num
+    (or (= num 1) (zero? num)) num
     :else (list '** num term)
     ))
 (defn base [exp] (second exp))
@@ -1064,7 +1065,71 @@
                       (multiplicand exp))
         )
     (exponent? exp)
-      (make-exponentiation
-        ())
-    :else nil
+      (make-exponentiation (make-product
+                             (exponent exp)
+                             (make-exponentiation
+                               (base exp)
+                               (dec (exponent exp))))
+                           (deriv (base exp) var))
+    :else  (do
+             (println exp)
+             nil
+             )
+    ))
+
+; 2.57
+;; update the program to handle arbitrary sized sum and product expressions
+
+(defn augend [s]
+  (let [a (rest (drop 1 s))]
+    (if (= (count a) 1)
+      a
+      (cons '+ a)
+      )))
+
+(defn multiplicand [p]
+  (let [a (rest (drop 1 p))]
+    (if (= (count a) 1)
+      a
+      (cons '* a))
+    ))
+
+; 2.58
+;; update the diferentiation program to work on infix data rather than prefix. Also build in the order of operations
+
+;a
+
+(defn make-sum [l r]
+  (cond
+    (=number? l 0) r
+    (=number? r 0) l
+    (and (number? l) (number? r)) (+ l r)
+    :else '(l + r)
+    ))
+(defn addend [sum] (first sum))
+(defn augend [sum] (nth sum 2))
+(defn sum? [x] (= (second x) '+))
+
+(defn make-product [l r]
+  (cond
+    (or (=number? l 0) (=number? r 0)) 0
+    (=number? l 1) r
+    (=number? r 1) l
+    (and (number? l) (number? r)) (* l r)
+    :else '(l * r)
+    ))
+(defn multiplier [product] (first product))
+(defn multiplicand [product] (nth product 2))
+(defn product? [x] (= (second x) '*))
+
+;b
+; this is where it gets complicated thanks to order of operations
+
+; check for multiplication first, walking left -> right
+(defn is-product? [ls] (nil? (some #{'*} ls)))
+(defn list-to-product [ls]
+  (let [l (take-while #(not (= '* %)) ls)
+        r (drop-while #(not (= '* %)) ls)
+        ]
+    (make-product l r)
     ))
