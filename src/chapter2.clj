@@ -1116,7 +1116,7 @@
     (=number? l 1) r
     (=number? r 1) l
     (and (number? l) (number? r)) (* l r)
-    :else '(l * r)
+    :else (list l '* r)
     ))
 (defn multiplier [product] (first product))
 (defn multiplicand [product] (nth product 2))
@@ -1126,10 +1126,136 @@
 ; this is where it gets complicated thanks to order of operations
 
 ; check for multiplication first, walking left -> right
-(defn is-product? [ls] (nil? (some #{'*} ls)))
-(defn list-to-product [ls]
-  (let [l (take-while #(not (= '* %)) ls)
-        r (drop-while #(not (= '* %)) ls)
-        ]
-    (make-product l r)
+(defn product? [ls] (not (nil? (some #{'*} ls))))
+(defn sum? [ls] (not (nil? (some #{'+} ls))))
+
+(defn right-of-sym [sym expr]
+  (let [r (rest (drop-while #(not (= sym %)) expr))]
+    (if (= 1 (count r))
+      (first r)
+      r
+      )))
+
+(defn left-of-sym [sym expr]
+  (let [l (take-while #(not (= sym %)) expr)]
+    (if (= 1 (count l))
+      (first l)
+      l
+      )))
+
+(defn addend [sum] (left-of-sym '+ sum))
+(defn auggend [sum] (right-of-sym '+ sum))
+(defn multiplier [prod] (left-of-sym '* prod))
+(defn multiplicand [prod] (right-of-sym '* prod))
+
+(defn make-product [l r]
+  (cond
+    (or (=number? l 0) (=number? r 0)) 0
+    (= 1 l) r
+    (= 1 r) l
+    (and (number? l) (number? r)) (* l r)
+    (and (coll? l) (coll? r) (not (sum? l)) (not (sum? r)))  (list l '* r)
+    (and (coll? l) (not (sum? l))) (concat l ['* r])
+    (and (coll? r) (not (sum? r))) (concat [l '*] r)
+    :else (list l '* r)
     ))
+
+(defn make-sum [l r]
+  (cond
+    (=number? l 0) r
+    (=number? r 0) l
+    (and (number? l) (number? r)) (+ l r)
+    (and (coll? l) (coll? r)) (list l '+ r)
+    (coll? l) (concat l ['+ r])
+    (coll? r) (concat [l '+] r)
+    :else (list l '+ r)
+    ))
+
+
+;2.59
+;; Set operations
+(defn element-of-set? [elem set]
+  (cond
+    (empty? set) false
+    (= x (first set)) true
+    :else (element-of-set? elem (rest set))
+    ))
+
+(defn adjoin-set [elem set]
+  (if element-of-set? elem set) set (cons elem set))
+
+(defn intersection-set [set1 set2]
+  (cond
+    (or (empty? set1) (empty? set2)) '()
+    (element-of-set? (first set1) set2) (cons (first set1) (intersection-set (rest set1) set2))
+    :else (intersection-set (rest set1) set2)
+    ))
+
+(defn union-set [set1 set2]
+  (cond
+    (empty? set1) set2
+    (empty? set2) set1
+    (element-of-set? (first set1) set2) set2
+    :else (union-set (rest set1) (cons (first set1) set2))
+    ))
+
+
+;2.60
+;; allow duplicate elements in the sets
+(defn adjoin-set [elem set] (cons elem set))
+
+(defn union-set [set1 set2]
+  (cond
+    (empty? set1) set2
+    (empty? set2) set1
+    :else (union-set (rest set1) (cons (first set1) set2))
+    ))
+
+;; as should be clear from the functions I changed, removing the uniqueness constraint on the set's internal representation
+;; allows for very fast append & union, at the expense of slower lookups via element & intersection. This would be
+;; useful in append-heavy workflows where searches are comparatively light
+
+;2.61
+;; Adjoin-set for ordered list implementation of sets
+(defn element-of-set-o [x set]
+  (cond
+    (empty? set) false
+    (= x (first set)) true
+    (< x (first set)) false
+    :else (element-of-set-o x (rest set))
+  ))
+
+(defn intersection-set-o [set1 set2]
+  (if (or (empty? set1) (empty? set2))
+    '()
+    (let [x1 (first set1)
+          x2 (first set2)]
+      (cond
+        (= x1 x2) (cons x1 (intersection-set-o (rest set1) (rest set2)))
+        (< x1 x2) (intersection-set-o (rest set1) set2)
+        (< x2 x1) (intersection-set-o set1 (rest set2))
+        ))
+    ))
+
+(defn adjoin-set-o [x set]
+  (if (empty? set)
+    (cons x set)
+    (concat
+      (take-while #(< % x) set)
+      (let [tail (drop-while #(< % x) set)]
+        (if (= x (first tail))
+          tail
+          (cons x tail)
+        )
+      )
+    )))
+
+;2.62
+;; provide an O(n) union-set for ordered list set implementation
+(defn union-set-o [set1 set2]
+  (cond
+    (empty? set1) set2
+    (empty? set2) set1
+    :else (adjoin-set-o (first set1) set2)
+    )
+  )
