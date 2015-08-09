@@ -1389,6 +1389,13 @@
 ;b
 ;; The procedure grows with linear time since it only requires a single traversal across the input list. All other operations are constant time or on an as-yet untouched subset of the data.
 
+; 2.65
+;; provide O(n) implementations of union & intersection on balanced binary trees
 
+(defn union-set [set1 set2]
+  (list->tree (union-set-o (tree->list' set1) (tree->list' set2))))
+
+(defn intersect-set [set1 set1]
+  (list->tree (intersection-set-o (tree->list' set1) (tree->list' set2))))
 
 
