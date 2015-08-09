@@ -1256,6 +1256,8 @@
   (cond
     (empty? set1) set2
     (empty? set2) set1
-    :else (adjoin-set-o (first set1) set2)
+    :else (union-set-o (rest set1) (adjoin-set-o (first set1) set2))
     )
   )
+
+
