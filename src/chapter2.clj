@@ -1260,4 +1260,135 @@
     )
   )
 
+;; Binary Trees
+
+(defn entry [tree] (first tree))
+(defn left-branch [tree] (second tree))
+(defn right-branch [tree] (nth tree 2))
+(defn make-tree [entry left right] [entry left right])
+
+(defn element-of-set? [x set]
+  (cond
+    (empty? set) false
+    (= x (entry set)) true
+    (< x (entry set)) (element-of-set? x (left-branch set))
+    (> x (entry set)) (element-of-set? x (right-branch set))
+    ))
+
+(defn adjoin-set [x set]
+  (cond
+    (empty? set) (make-tree x '[] '[])
+    (= x (entry set)) set
+    (< x (entry set))
+      (make-tree (entry set)
+                 (adjoin-set x (left-branch set))
+                 (right-branch set))
+    (> x (entry set))
+      (make-tree (entry set)
+                 (left-branch set)
+                 (adjoin-set x (right-branch set)))
+    ))
+
+(def simpleTree (make-tree 7
+                           (make-tree 3
+                                      (make-tree 1 '[] '[])
+                                      (make-tree 5 '[] '[]))
+                           (make-tree 9
+                                      '[]
+                                      (make-tree 11 '[] '[]))
+                           ))
+
+(def unbalancedTree [3
+                     [1 '[] '[]]
+                     [7
+                      [5 '[] '[]]
+                      [9 '[]
+                       [11 '[] '[]]
+                       ]
+                      ]
+                     ])
+
+(def flippedSimpleTree [5
+                        [3
+                         [1 '[] '[]]
+                         '[]]
+                        [9
+                         [7 '[] '[]]
+                         [11 '[] '[]]
+                         ]
+                        ]
+  )
+
+
+
+; 2.63
+;; Are these two binary-tree => list functions equivalent?
+
+(defn tree->list [tree]
+  (if (empty? tree)
+    '[]
+    (concat
+      (tree->list (left-branch tree))
+      (cons (entry tree) (tree->list (right-branch tree)))
+      )))
+
+(defn tree->list' [tree]
+  (defn copy-to-list [tree result-list]
+    (if (empty? tree)
+      result-list
+      (copy-to-list
+        (left-branch tree)
+        (cons (entry tree)
+              (copy-to-list (right-branch tree) result-list))
+        )))
+  (copy-to-list tree '[])
+  )
+
+;a
+;; Will tree->list & tree-list' produce the same tree for every tree?
+;; Yes, these will produce equivalent trees. Both functions recursively walk the trees and build up from l -> right
+
+;b
+;; Do tree->list & tree->list' have the same order of growth?
+;; No, the first procedure, because it uses concat, requires O(n log n) steps due to concat repeatedly walking smaller & smaller left-hand lists for each input (hence the log(n))
+;; The second procecure completes in linear time because it grows the list by consing a single element onto the result-list for each sub-tree, avoiding repeated traversals
+
+; 2.64
+;; convert a list to a tree
+
+(defn list->tree [ls]
+  (first (partial-tree ls (count ls))))
+
+(defn partial-tree [ls n]
+  (if (zero? n)
+    (cons '[] ls)
+    (let [left-size (quot (dec n) 2)]
+      (let [left-result (partial-tree ls left-size)]
+        (let [left-tree (first left-result)
+              non-lefts (rest left-result)
+              right-size (- n (inc left-size))]
+          (let [this-entry (first non-lefts)
+                right-result (partial-tree (first non-lefts) right-size)]
+            (let [right-tree (first right-result)
+                  remaining (rest right-result)]
+              (cons (make-tree this-entry left-tree right-tree) remaining)
+            )))))))
+
+;a
+;; explain how this function works
+;; partial-tree works by starting from the midpoint of the list and building up the left & right sub trees recursively.
+;; It does this by repeatedly taking smaller & smaller slices from the original list on both the left & right side until there is nothing left, at which point it returns an empty vector,
+;; which is then uses as the fixed-point of the function & added to the appropriate place in the tree.
+
+;;                   5
+;;                 /   \
+;;                1     9
+;;                 \   / \
+;;                  3 7   11
+
+;b
+;; The procedure grows with linear time since it only requires a single traversal across the input list. All other operations are constant time or on an as-yet untouched subset of the data.
+
+
+
 
