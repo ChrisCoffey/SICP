@@ -1395,7 +1395,113 @@
 (defn union-set [set1 set2]
   (list->tree (union-set-o (tree->list' set1) (tree->list' set2))))
 
-(defn intersect-set [set1 set1]
+(defn intersect-set [set1 set2]
   (list->tree (intersection-set-o (tree->list' set1) (tree->list' set2))))
 
+
+; 2.66
+;; Iplement key lookup for random access
+(defn lookup [key set]
+  (cond
+    (empty? set) false
+    (= (entry set) key) (entry set)
+    (< key (entry set)) (lookup key (left-branch set))
+    (> key (entry set)) (lookup key (right-branch set))
+    :else false
+    ))
+
+
+;; to encode n characters, you need roughtly log2n bits per symbol
+
+; Huffman trees
+(defn make-leaf [symbol weight] (list 'leaf symbol weight)) ; Interesting way to make this "typed"
+(defn leaf? [node] (= (first node) 'leaf))
+(defn symbol-leaf [node] (second node))
+(defn weight-leaf [node] (nth node 2))
+
+(defn syms [node]
+  (if (leaf? node)
+    (list (symbol-leaf node))
+    (nth node 2)))
+
+(defn weight [node]
+(if (leaf? node)
+  (weight-leaf node)
+  (last node)
+  ))
+
+(defn make-code-tree [left right]
+  (list left
+        right
+        (concat (syms left) (syms right))
+        (+ (weight left) (weight right))
+        ))
+(defn left-branch [tree] (first tree))
+(defn right-branch [tree] (second tree))
+
+(defn choose-branch [bit node]
+  (if (zero? bit)
+    (left-branch node)
+    (right-branch node))
+  )
+
+(defn decode [bits tree]
+  (defn decode-symbol [bits current-branch]
+    (if (empty? bits)
+      '()
+      (let [next-branch (choose-branch (first bits) current-branch)]
+        (if (leaf? next-branch)
+          (cons (symbol-leaf next-branch) (decode-symbol (rest bits) tree))
+          (decode-symbol (rest bits) next-branch)
+          ))
+      ))
+  (decode-symbol bits tree)
+  )
+
+(defn adjoin-set [x set]
+  (cond
+    (empty? set) (list x)
+    (< (weight x) (weight (first set))) (cons x set)
+    :else (cons (first set) (adjoin-set x (rest set)))
+        ))
+
+(defn make-leaf-set [pairs]
+  (if (empty? pairs)
+    '()
+    (let [pair (first pairs)]
+      (adjoin-set (make-leaf (first pair) (second pair)) (make-leaf-set (rest pairs)))
+      )))
+
+; 2.67
+;; create an encoding tree and simple message using the Huffman tree code
+(def sample-tree                                            ;   ({A, B, C, D}, 8)
+  (make-code-tree                                           ;         / \
+    (make-leaf 'A 4)                                        ;        /   \
+    (make-code-tree                                         ;   (A, 4)  ({B, C, D}, 4)
+      (make-leaf 'B 2)                                      ;           /    \
+      (make-code-tree                                       ;     (B, 2)    ({C, D}, 2)
+        (make-leaf 'D 1)                                    ;              /     \
+        (make-leaf 'C 1)))))                                ;         (C, 1)     (D, 1)
+
+(def sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+
+;Result is (A D A B B C A)
+
+; 2.68
+;; encode a message
+
+(defn encode-symbol [symbol tree bits]
+    (cond
+      (leaf? tree) bits
+      (not (nil? (some #{symbol} (left-branch tree)))) (encode-symbol symbol (left-branch tree) (conj bits 0))
+      (not (nil? (some #{symbol} (right-branch tree)))) (encode-symbol symbol (right-branch tree) (conj bits 1))
+      :else (throw (Exception. "oh no")))
+  )
+
+
+(defn encode [message tree]
+  (if (empty? message)
+    '()
+    (concat (encode-symbol (first message) tree '[])
+            (encode (rest message) tree))))
 
