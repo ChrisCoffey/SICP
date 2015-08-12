@@ -1490,18 +1490,41 @@
 ; 2.68
 ;; encode a message
 
-(defn encode-symbol [symbol tree bits]
-    (cond
-      (leaf? tree) bits
-      (not (nil? (some #{symbol} (left-branch tree)))) (encode-symbol symbol (left-branch tree) (conj bits 0))
-      (not (nil? (some #{symbol} (right-branch tree)))) (encode-symbol symbol (right-branch tree) (conj bits 1))
-      :else (throw (Exception. "oh no")))
-  )
+(defn encode-symbol [symbol tree]
+  (defn go [bits sub-tree]
+      (cond
+        (leaf? sub-tree) bits
+        (and (leaf? (left-branch sub-tree)) (= symbol (symbol-leaf (left-branch sub-tree) )))(go (conj bits 0) (left-branch sub-tree))
+        (and (leaf? (right-branch sub-tree)) (= symbol (symbol-leaf (left-branch sub-tree))))(go (conj bits 1) (right-branch sub-tree))
+        (not (nil? (some #{symbol}  (syms (left-branch sub-tree)))))(go (conj bits 0) (left-branch sub-tree))
+        (not (nil? (some #{symbol} (syms (right-branch sub-tree)))))(go (conj bits 1) (right-branch sub-tree))
+        ))
+    (go '[] tree)
+ )
 
 
 (defn encode [message tree]
   (if (empty? message)
     '()
-    (concat (encode-symbol (first message) tree '[])
+    (concat (encode-symbol (first message) tree)
             (encode (rest message) tree))))
+
+; 2.69
+;; symbol frequency pairs to generate a Huffman tree
+
+(defn successive-merge [trees]
+  (if (= 1 (count trees))
+    (first trees)
+    (let [l (first trees)
+          r (second trees)
+          more (drop 2 trees)
+          tree (make-code-tree l r)
+          trees (adjoin-set tree more)
+          ]
+      (successive-merge trees)
+      )))
+;;grab first two pairs, turn into a tree, then use adjoin set to preserve ordering correctly
+
+(defn generate-huffman-tree [pairs] (successive-merge (make-leaf-set pairs)))
+
 
