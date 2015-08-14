@@ -1510,7 +1510,7 @@
             (encode (rest message) tree))))
 
 ; 2.69
-;; symbol frequency pairs to generate a Huffman tree
+;; symbol frequency pairs to generate a huffman tree
 
 (defn successive-merge [trees]
   (if (= 1 (count trees))
@@ -1526,5 +1526,38 @@
 ;;grab first two pairs, turn into a tree, then use adjoin set to preserve ordering correctly
 
 (defn generate-huffman-tree [pairs] (successive-merge (make-leaf-set pairs)))
+
+
+; 2.70
+;; encode and decode the rock song
+
+(def rock-pairs
+  '((na 16) (yip 9) (sha 3) (a 2) (get 2) (job 2) (boom 1) (wah 1)))
+
+(def rock-tree (generate-huffman-tree rock-pairs))
+
+
+
+(def rock-message '(get a job
+                      sha na na na na na na na na
+                      get a job
+                      sha na na na na na na na na
+                      wah yip yip yip yip yip yip yip yip yip
+                      sha boom))
+
+(def encoded-tree (encode rock-message rock-tree))
+
+
+;; a
+(1 1 1 1 1 1 1 0 0 1 1 1 1 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 0 0 1 1 1 1 0 1 1 1 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 1 0 1 1 0 1 1)
+;;b
+;; if this were a fixed-length encoding then it would require k * n bits. for an alphabet of 8 symbols, that's 3 bits per symbol, and the message length is 36, so 36*3, or 108 bits.
+
+; 2.71
+;; Huffman tree sizes
+;; A Huffman tree always uses a single bit for the most common symbol in the alphabet & it will use n-1 bits for the least common symbol.
+
+; 2.72
+;;
 
 
