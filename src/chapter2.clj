@@ -1555,9 +1555,11 @@
 
 ; 2.71
 ;; Huffman tree sizes
-;; A Huffman tree always uses a single bit for the most common symbol in the alphabet & it will use n-1 bits for the least common symbol.
+;; A Huffman tree always uses a single bit for the most common symbol in the alphabet & it will use n-1 bits for the least common symbol, so it should end up at n log n bits
 
 ; 2.72
-;;
+;; What is the order of growth for the code in 2.68
+;; Should be something akin to O(n^2) because of repeated searches and the cost of walking the symbol list.
+
 
 
