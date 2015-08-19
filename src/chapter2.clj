@@ -1562,4 +1562,102 @@
 ;; Should be something akin to O(n^2) because of repeated searches and the cost of walking the symbol list.
 
 
+;; Data driven programming
+;; aka a sad type-system in Clojure
 
+;2.73
+;; Rework the symbolic diferentiation program from earlier to use a type lookup table
+
+(defn operator [exp] (first exp))
+(defn operands [exp] (rest exp))
+
+(defn deriv [exp var]
+  (cond
+    (number? exp) 0
+    (variable? exp)
+    (if (same-variable? exp var) 1 0)
+    :else  ((get-lookup-table 'deriv (operator exp)) (operands exp) var)
+    ))
+
+;a
+;; The above coe factors out all of the logic releavant to particular symbols & hides it away behind the get function,
+;; which will perform a lookup into said symbol table to pull out the correct function.
+
+;b
+(defn make-sum [l r]
+  (cond
+    (=number? l 0) r
+    (=number? r 0) l
+    (and (number? l) (number? r)) (+ l r)
+    :else (list '+ l r)
+    ))
+
+(defn make-product [l r]
+  (cond
+    (or (=number? l 0) (=number? r 0)) 0
+    (=number? l 1) r
+    (=number? r 1) l
+    (and (number? l) (number? r)) (* l r)
+    :else (list '* l r)
+    ))
+
+(defn addend [exp] (first exp))
+(defn augend [exp] (second exp))
+(defn multiplier [exp] (first exp))
+(defn multiplicand [exp] (second exp))
+
+(defn deriv-sum [exp var]
+  (make-sum
+    (deriv (addend exp) var)
+    (deriv (augend exp) var)))
+
+(defn deriv-mult [exp var]
+  (make-sum
+    (make-product (multiplier exp)
+                  (deriv (multiplicand exp) var))
+    (make-product (deriv (multiplier exp) var)
+                  (multiplicand exp))))
+
+(def lookup-table (atom {}))
+(defn get-lookup-table [op t]
+  (@lookup-table [op t]))
+(defn put-lookup-table [op t f]
+  (swap! lookup-table #(assoc % [op t] f)))
+
+
+; c
+(defn make-exponentiation [num term]
+  (cond
+    (=number? term 0) 1
+    (=number? term 1) num
+    (or (= num 1) (zero? num)) num
+    :else (list '** num term)
+    ))
+(defn base [exp] (first exp))
+(defn exponent [exp] (second exp))
+
+(defn load-package []
+  ((put-lookup-table 'deriv '+ deriv-sum)
+    (put-lookup-table 'deriv '* deriv-mult)
+    (put-lookup-table 'deriv '** deriv-exponent)
+    ))
+
+(defn deriv-exponent [exp var]
+  (make-exponentiation (make-product
+                         (exponent exp)
+                         (make-exponentiation
+                           (base exp)
+                           (dec (exponent exp))))
+                       (deriv (base exp) var))
+  )
+
+;d
+;; the only change that should be made if we flip the deriv & symbol would be changing the lookup table construction
+;; to use symbol then deriv. This is trivial thanks to the underlying map.
+
+;2.74
+;; Simple file system using data directed programming
+
+;a
+(defn get-record [empId file]
+  ())
