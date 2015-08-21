@@ -1659,5 +1659,49 @@
 ;; Simple file system using data directed programming
 
 ;a
-(defn get-record [empId file]
-  ())
+(defn division [f] (first f))
+(def file-lookup-table (atom {}))
+
+(defn get-employee-record [file]
+  (let [div (division file)]
+    (file-lookup-table [div 'empId] file)
+    ))
+
+;; each division's files must have an accessor function for extracting employee ids
+
+;b
+(defn get-employee-salary [file]
+  (let [div (division file)]
+    (file-lookup-table [div 'salary] file)
+    ))
+
+;; again, the division's file now needs a salary accessor as well. Otherwise the symbol lookup table handles this
+
+;c
+(defn employee-name [div record]
+  (file-lookup-table [div 'empName] record))
+
+(defn find-employee-record [divFiles empName]
+  (let [ empRecord (filter (fn [f] (= empName (employee-name (division f) (get-employee-record f)))) divFiles)]
+  (if (empty? empRecord) () (first empRecord))
+))
+
+;d
+;; When a new company is gobbled up by insatiable, they only need to have the new company install their own file package
+;; into the main system.
+
+; 2.75
+;; implement make-from-mag-ang in message passing style
+
+(defn make-from-mag-ang [mag ang]
+  (defn dispatch [op]
+    (cond
+      (= op 'magnitude) mag
+      (= op 'angle) ang
+      (= op 'real-part) (* mag (Math/cos ang))
+      (= op 'imag-part) (* mag (Math/sin ang))
+      :else ()
+    )))
+
+; 2.76
+;; Message passing seems to handle adding new types quite well, while data-directed supports adding new operations better
