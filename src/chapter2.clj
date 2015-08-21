@@ -1705,3 +1705,79 @@
 
 ; 2.76
 ;; Message passing seems to handle adding new types quite well, while data-directed supports adding new operations better
+
+; 2.77
+;; Describe why the following code works for selecting parts of the complex numbers
+(put-lookup-table 'real-part '(complex) real-part)
+(put-lookup-table 'imag-part '(complex) imag-part)
+(put-lookup-table 'magnitude '(complex) magnitude)
+(put-lookup-table 'angle '(complex) angle)
+
+;a
+; Adding these functions to the lookup table will make them available for complex types because it exposes them as part of the
+; public api for the system. Otherwise those calls are hidden within the complex scope.
+
+;b
+;Trace through the procedure execution
+; There should be two calls to apply-generic, one for complex & one for rectangular wrt. magnitude
+
+; 2.78
+;; update the type tag system to treat scheme numbers normally rather than as a pair
+(def numeric-lookup (atom {}))
+(defn get-numeric [op t]
+  (@numeric-lookup [op t]))
+(defn put-numeric [op t f]
+  (swap! numeric-lookup #(assoc % [op t] f)))
+
+(defn install-scheme-numbers []
+  (put-numeric 'add '(scheme-number) +)
+  (put-numeric 'sub '(scheme-number) -)
+  (put-numeric 'mul '(scheme-number) *)
+  (put-numeric 'div '(scheme-number) /)
+  'done
+  )
+
+;; This will check whether the arguments are all numbers, and if so look up the appropriate operator
+(defn apply-generic [op & args]
+  (cond
+    (every? #(number? %) args) (apply (get-numeric op '(scheme-number)) args)
+    ;...
+    )
+  )
+
+; 2.79
+;; generic equality predicate
+(defn install-scheme-numbers []
+  (put-numeric 'add '(scheme-number) +)
+  (put-numeric 'sub '(scheme-number) -)
+  (put-numeric 'mul '(scheme-number) *)
+  (put-numeric 'div '(scheme-number) /)
+  (put-numeric 'eq '(scheme-number) =)
+  'done
+  )
+
+(defn install-rational-numbers []
+  (defn numer [x] (first x))
+  (defn denom [x] (second x))
+  (defn make-rat [n d]
+    (let [g (gcd n d)]
+      (cons (/ n g) (/ d g))))
+
+  (defn add-rat [x y]
+    (make-rat (+ (* (numer x) (denom y) (* (numer y) (denom x))))
+              (* (denom x) (denom y))))
+  (defn sub-rat [x y]
+    (make-rat (- (* (numer x) (denom y) (* (numer y) (denom x))))
+              (* (denom x) (denom y))))
+  (defn mul-rat [x y]
+    (make-rat (* (numer x) (numer y)) (* (denom x) (denom y))))
+  (defn div-rat [x y]
+    (make-rat (* (numer x) (denom y )) (* (numer y) (denom x))))
+
+  ;;todo add tagging etc...
+  )
+
+
+
+
+
