@@ -1773,10 +1773,33 @@
     (make-rat (* (numer x) (numer y)) (* (denom x) (denom y))))
   (defn div-rat [x y]
     (make-rat (* (numer x) (denom y )) (* (numer y) (denom x))))
+  (defn eq-rat [x y]
+    (let [xr (make-rat (numer x) (denom x))
+          yr (make-rat (numery y) (denom y))]
+      (and (= (numer xr) (numer yr)) (= (denom xr) (denom yr)))))
 
-  ;;todo add tagging etc...
+  (defn tag [x] (attatch-tag 'rational x))
+  (put-numeric 'add '(rational rational) #(tag (add-rat %1 %2)))
+  (put-numeric 'sub '(rational rational) #(tag (sub-rat %1 %2)))
+  (put-numeric 'mul '(rational rational) #(tag (mul-rat %1 %2)))
+  (put-numeric 'div '(rational rational) #(tag (div-rat %1 %2)))
+  (put-numeric 'eq '(rational rational) #(tag (eq-rat %1 %2)))
   )
 
+;; feeling lazy, but assume this pattern is repeated for complex numbers, with this for equality
+
+(defn eq-complex [x y] (and (= (real-part x) (real-part y) (= (imag-part x) (imag-part y)))))
+(put-numeric 'eq '(complex complex) eq-complex)
+
+; 2.80
+;; Add a zero check for all three.
+;; I'll be doing the abbreviated implementation again, no more writing out the world.
+
+(put-numeric '=zero? '(scheme-number) zero?)
+(defn =zero?-rat [x] (zero (numer x)))
+(put-numeric '=zero? '(rational rational) =zero?-rat)
+(defn =zero?-complex [x] (and (zero? (real-part x)) (zero? (imag-part x))))
+(put-numeric '=zero? '(complex complex) =zero?-complex)
 
 
 
