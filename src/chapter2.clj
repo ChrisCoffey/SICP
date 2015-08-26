@@ -1801,6 +1801,40 @@
 (defn =zero?-complex [x] (and (zero? (real-part x)) (zero? (imag-part x))))
 (put-numeric '=zero? '(complex complex) =zero?-complex)
 
+; 2.81
+;; self-coercion issues
+
+;a If we install self-coercive functions into the lookup table, what happens if two arguments are passed in for
+;; a function that they don't support?
+
+;; we will do extra work by self-coercing the calls to themselves before falling down at the end and recognizing there's no function for the argument types
+
+;b He was incorrect. The first step looks up for a function & some type tags, and if the function is found then it applies it, otherwise we go through the coercion
+;c
+
+(defn apply-generic [op & args]
+  (let [type-tags ((map #(first %) args))]
+    (let [proc (get-numeric op type-tags)]
+      (if proc
+        (apply proc (map #(contents %) args))
+        (if (= (count args) 2)
+          (let [type1 (first type-tags)
+                type2 (second type-tags)
+                a1 (first args)
+                a2 (second args)]
+            (if (= type1 type2)
+              (throw (Exception "not supported for these types"))
+              (let [t1->t2 (get-coercion type1 type2)
+                    t2->t1 (get-coercion type2 type1)]
+                (cond
+                  (t1->t2) (apply-generic op (t1->t2 a1) a2)
+                  (t2->t1) (apply-generic op (t2->t1 a2) a1)
+                  :else (throw (Exception "not supported for these types"))
+                  )
+                ))))))))
+
+; 2.82
+;; generalize apply-generic to handle multiple arguments in the general case
 
 
 
