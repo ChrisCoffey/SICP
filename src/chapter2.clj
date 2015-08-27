@@ -500,8 +500,8 @@
   (cond
     (nil? tree) nil
     (not (pair? tree)) (* tree tree)
-    :else (list (square-tree (first tree) (square-tree next tree)))
-    ))
+    :else (list (square-tree (first tree)) (square-tree (next tree))))
+    )
 
 (defn pair? [ls] (and (list? ls) (= (count ls) 2)))
 
@@ -1835,6 +1835,113 @@
 
 ; 2.82
 ;; generalize apply-generic to handle multiple arguments in the general case
+;; The trick is to find the least-general common type & use that
+
+(def type-hierarchy (atom {}))
+(def root-type 'root)
+(defn common-supertype [t1 t2]
+  (let [tag-list1 (@type-hierarchy t1)
+        tag-list2 (@type-hierarchy t2)]
+    (defn firstCommon [remaining checkList]
+      (let [h (first remaining)
+            t (rest remaining)]
+        (cond
+          (contains? checkList h) h
+          (not (empty? t)) (firstCommon t checkList)
+          :else root-type
+          )))
+    (firstCommon tag-list1 tag-list2)
+    )
+  )
+
+(defn common-list-type [ls]
+  (cond
+    (empty? ls) root-type
+    (empty? (next ls)) (first ls)
+    (= 2 (length ls)) (common-supertype (first ls) (second ls))
+    :else
+      (fold-left common-supertype (common-supertype (first ls) (second ls)) (next (next ls)))
+    ))
+
+(defn apply-generic-multi [op & args]
+  (let [type-tags ((map #(first %) args))]
+    (let [shared-type (common-list-type type-tags)]
+      (let [coerceFuncs (map #(get-coercion % shared-type) type-tags)
+            mapped (map vector coerceFuncs args)
+            coerced (map #((first %) (second %)) mapped)
+            ]
+        (apply-generic op shared-type coerced)
+        )
+      )
+    )
+  )
+
+;2.83
+
+(defn install-hierarchy []
+  (swap! type-hierarchy #(assoc % 'complex '(root)))
+  (swap! type-hierarchy #(assoc % 'real '(complex root)))
+  (swap! type-hierarchy #(assoc % 'rational '(real complex root)))
+  (swap! type-hierarchy #(assoc % 'integer '(rational real complex root)))
+  )
+
+(defn raise [type]
+  (let [direct-parent (first (@type-hierarchy type))
+        f (get-coercion type direct-parent)]
+    (f type))
+  )
+
+;;This pulls the coercion from our type to its direct parent. For complex, the direct parent is root, to which there cannot be a coercion.
+;; Hence, we can now raise any type in our hierarchy
+
+;2.84
+(defn raiseTo [obj target-type]
+  (if (= (first obj) target-type)
+    obj
+    (raise obj)
+    ))
+
+(defn apply-generic-raising [op & args]
+  (let [type-tags ((map #(first %) args))]
+    (let [shared-type (common-list-type type-tags)]
+      (let [mapped (map #(raiseTo % shared-type) args)]
+        (apply-generic op shared-type mapped)
+      ))))
+
+;2.85
+;; implement project, which pushes a type down the hierarchy
+(defn project [type]
+  (let [direct-child (filter #(= type (first (second %))) (seq type-hierarchy))
+        f (get-projection type direct-child)]
+    (f type)))
+
+(defn drop)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
