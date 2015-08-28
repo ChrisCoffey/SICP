@@ -1915,7 +1915,17 @@
         f (get-projection type direct-child)]
     (f type)))
 
-(defn drop)
+(def can-drop-type? [obj]
+  (let [t (first obj)]
+    (cond
+      (= t 'rational) (not (zero? (denom obj)))
+      (= t 'real) (rational? obj)
+      (= t 'complex) (=zero?-complex (imag-part obj))
+      )
+    )
+  )
+
+
 
 
 
