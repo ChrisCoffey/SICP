@@ -1915,7 +1915,7 @@
         f (get-projection type direct-child)]
     (f type)))
 
-(def can-drop-type? [obj]
+(defn can-drop-type? [obj]
   (let [t (first obj)]
     (cond
       (= t 'rational) (not (zero? (denom obj)))
@@ -1924,6 +1924,25 @@
       )
     )
   )
+
+(defn drop [obj]
+  (if can-drop-type? obj)
+    (let [tpe (first obj)]
+       ((project tpe) obj)
+      )
+    obj
+  )
+
+;2.86
+;; support complex numbers where each part may be any sort of number
+;; This basically includes implementing euler's formula
+
+(defn sine-gen [num] (apply-generic 'sine num))
+(defn cosine-gen [num] (apply-generic 'cosine num))
+
+;; this is pretty involved, obviously. todo come back and implement this
+
+
 
 
 
