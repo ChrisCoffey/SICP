@@ -1940,10 +1940,19 @@
 (defn sine-gen [num] (apply-generic 'sine num))
 (defn cosine-gen [num] (apply-generic 'cosine num))
 
+(defn install-sine-cosine []
+  (put-numeric 'sine '(rational ) #(tag (Math/sin (/ (numer %) (denom %)))))
+  (put-numeric 'cosine '(rational ) #(tag (Math/cos (/ (numer %) (denom %)))))
+  (put-numeric 'sine '(number) #(tag (Math/sin %1)))
+  (put-numeric 'cosine '(number) #(tag (Math/cos %1)))
+  )
+
 ;; this is pretty involved, obviously. todo come back and implement this
 
+;2.87
+;; install zero for polynomials into the generic arithmetic package
 
-
+()
 
 
 
