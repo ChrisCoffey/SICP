@@ -1949,36 +1949,75 @@
 
 ;; this is pretty involved, obviously. todo come back and implement this
 
+(defn add-poly [p1 p2]
+  (if (same-variable? (variable p1) (variable p2))
+    (make-poly (variable p1)
+               (add-terms (term-list p1)
+                          (term-list p2)))
+    (throw (RuntimeException "not a polynomial"))
+    ))
+
+(defn mul-poly [p1 p2]
+  (if (same-variable? (variable p1) (variable p2))
+    (make-poly (variable p1)
+               (mul-terms (term-list p1)
+                          (term-list p2)))
+    (throw (RuntimeException "not a valid polynomial"))
+    ))
+
+(defn make-poly [variable term-list] (cons variable term-list))
+(defn variable [p] (first p))
+(defn term-list [p] (rest p))
+(defn empty-termlist? [p] (empty? p))
+(def the-empty-termlist '())
+(defn adjoin-term [terms p] (cons p terms))
+(defn order [term] (first term))
+(defn coeff [term] (rest term))
+(defn first-term [terms] (first terms))
+(defn rest-term [terms] (rest terms))
+(defn adjoin-term [term terms]
+  (if (=zero? (coeff term))
+    terms
+    (cons term terms)
+    ))
+
+(defn install-polynomial-package
+  (defn tag [p] (attatch-tag 'polynomial p))
+  (put-numeric 'add '(polynomial polynomial) #(add-poly %1 %2))
+  (put-numeric 'mul '(polynomial polynomial) #(mul-poly %1 %2))
+  (put-numeric 'make 'polynomial #((tag (make-poly %1 %2))))
+  )
+
+
 ;2.87
 ;; install zero for polynomials into the generic arithmetic package
 
-()
+(defn zero-terms? [terms]
+  (if (empty-termlist? terms)
+    true
+    (and (=zero? (coef (first-term terms)))
+         (zero-terms? (rest-terms terms)))
+    ))
+
+(defn poly-zero? [p] (zero-terms? (term-list p)))
+(defn =zero? [p] (poly-zero? p))
 
 
+; 2.88
+;; implement polynomial subtraction using negation
+;; obvious fact here is a-b = a + (- b)
 
+(defn negate [a] (apply-generic 'negate a))
+(defn poly-map [f terms] (map f terms))
+(defn sub-poly [p1 p2]
+  (if (same-variable? (variable p1) (variable p2))
+    (make-poly (variable p1)
+               (add-terms (term-list p1)
+                          (make-poly p2 (poly-map negate p2))))
+    (throw (RuntimeException "different poly variables"))
+    ))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+;;todo come back and finish the polynomials
 
 
 
