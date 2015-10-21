@@ -115,6 +115,7 @@
 
 ;;3.5
 ;; Monte carlo integral estimation
+;; NOTE this implementation isn't stack safe, so large trial values will cause overflows
 (defn monte-carlo [trials experiment]
   (defn iter [remaining passed]
     (cond
@@ -130,12 +131,16 @@
 
 (defn integration-experiment [x y r]
   (<= (* r r) (+
-                (Math/pow (- (rand-in-range (- x r) (+ x r))) 2)
-                (Math/pow (- (rand-in-range (- y r) (+ y r))) 2)
+                (Math/pow (- (rand-in-range (- x r) (+ x r)) x) 2)
+                (Math/pow (- (rand-in-range (- y r) (+ y r)) y) 2)
                 )))
 
 (defn monte-carlo-integration [trials]
   (defn experiment [] (integration-experiment 5 7 3))
-  (monte-carlo trials experiment)
+   (* 10 (monte-carlo trials experiment))
   )
 
+(monte-carlo-integration 5000)                              ;; returns something on the order of 1557/5000 ~~ 3.114
+
+;; 3.6
+;; Random number reset
