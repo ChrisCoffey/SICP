@@ -144,3 +144,51 @@
 
 ;; 3.6
 ;; Random number reset
+;;apparently this (BSD forumla) is basically the worst LCG formula you can use
+(defn linear-congruential-generator [seed]
+  (mod (+  (* 1103515245 seed) 12345) (bit-shift-left 1 31))
+  )
+
+(defn random []
+  (let [r (atom 959)]
+    (defn go [message]
+      (condp = message
+        'reset #(reset! r %)
+        'generate (do
+                    (swap! r linear-congruential-generator)
+                    @r)))
+    go
+    ))
+
+;;3.7
+;; make joint bank account
+(defn make-account [balance password]
+  (defn withdraw [amt]
+    (if (>= @balance amt)
+      (do (swap! balance #(- % amt))
+          @balance
+          )
+      "Insufficient funds"
+      ))
+  (defn deposit [amt]
+    (do  (swap! balance #(+ % amt))
+         @balance
+         ))
+  (defn dispatch [m pw]
+    (if (= pw password)
+      (cond
+        (= m 'withdraw) withdraw
+        (= m 'deposit) deposit
+        (= m 'check-password) #(= password %)
+        :else "Unknown request")
+      "Bad Password"))
+  dispatch )
+
+(defn make-joint [account password newPassword]
+   (if ((account 'check-password password) password)
+     #(if (= newPassword %)
+        account
+        "Bad Password!"
+       )
+     "Bad Password!")
+  )
