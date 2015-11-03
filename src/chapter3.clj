@@ -179,16 +179,36 @@
       (cond
         (= m 'withdraw) withdraw
         (= m 'deposit) deposit
-        (= m 'check-password) #(= password %)
         :else "Unknown request")
       "Bad Password"))
   dispatch )
 
 (defn make-joint [account password newPassword]
-   (if ((account 'check-password password) password)
-     #(if (= newPassword %)
-        account
-        "Bad Password!"
-       )
-     "Bad Password!")
+  (let [f (fn [cmd]
+               (account cmd password))]
+    #(if (= newPassword %2)
+       (f %)
+       "Bad Password!")
+    )
   )
+
+(def acct (make-account (atom 100) "guest"))
+(def myAcct (make-joint acct "guest" "baboon"))
+((myAcct 'withdraw "baboon") 50) ; 50
+
+;;3.8
+;; Implement a simple function that changes the return value based on the evaluation order within addition
+(def state (atom []))
+(defn f [x]
+  (if (empty? @state)
+    (do (swap! state conj x)
+      x)
+    (min (first @state) x)
+    )
+  )
+
+(def left (+ (f 0) (f 1)))
+(reset! state [])
+(def fakeRight (+ (f 1) (f 0)))
+
+;; 3.9
