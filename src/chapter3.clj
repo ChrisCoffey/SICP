@@ -212,3 +212,44 @@
 (def fakeRight (+ (f 1) (f 0)))
 
 ;; 3.9
+;; draw env models for the following code
+
+(defn fact [n]
+  (if (= n 1)
+    1
+    (* n (fact (dec n))))
+  )
+;;
+;; ===========================
+;;|                           |
+;;|fact:                      |
+;;=============================
+;;
+;; =========
+;; |       | <----
+;; |n: int |     | loops back to itself, creating a new identical environment referencing this one
+;; ========= ----|
+;; E1
+;;
+
+;; 3.10
+;; illustrate the difference between using a local state variable for lambdas vs. a closure over the parameter
+
+;; I'll be answering these in long form rather than ascii art from now on. Art is hard.
+;; The stacking/chaining of environments into what's effectively a linked-list means that whether we create a local var
+;; in the let example or close over the parameter, the variable will be resolved by walking up the environment chain
+;; from the returned lambda & finding the value of "balance" defined there. This is why they are equivalent (provided there's no shadowing)
+
+;; 3.11
+;;more boxes and pointers
+
+;; 3.12
+;; what happens in the two appends
+
+;;3.13
+;;make cycle. what happens if you try to get the last element of a cycle?
+;; infinite loop. It's a cycle...
+
+;;3.14
+;; what does mystery function do?
+;; this reverses a list
