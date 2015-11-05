@@ -253,3 +253,66 @@
 ;;3.14
 ;; what does mystery function do?
 ;; this reverses a list
+
+;;3.15
+;;explain what happens in the following function
+(def x (list 'a 'b))
+(def z1 (cons x x))
+;;(('a 'b) 'a 'b)
+
+(def z2 (cons (list 'a 'b) (list 'a 'b)))
+;;(('a 'b) 'a 'b)
+
+;; now mutate the head of the list
+;; in the first example, because x is shared in the hosting environment, a change to x changes the head of the first list
+;; which in turn changes the head of the cdr as well. alternatively, the z2 list has no shared elements, so mutation won't change it
+
+;;3.16
+;; find counter points that prove this function wrong
+(defn pair? [x]
+  (and (coll? x) (= (count x) 2)))
+
+(defn count-pairs [x]
+  (if (not (pair? x))
+    0
+    (+ (count-pairs (first x))
+       (count-pairs (second x))
+       1)
+    ))
+
+
+(count-pairs '(1 (2 (3 4)))) ;; 3
+(def a [1 2])
+(def b [a 4])
+(def c [a b])
+(count-pairs [a [b c]]) ;; 7
+
+(def a [1 2])
+(def b [a a])
+(def lst [a b])
+(def looping-list [b lst])
+(count-pairs [a b])
+
+;;3.17
+;; correct count-pairs implementation
+(require clojure.set)
+
+(defn distinct-pairs [x]
+  (defn iter [acc ls]
+    (if (and
+           (pair? ls)
+           (nil? (some #{ls} acc)))
+      (iter (conj
+              (cons ls acc)
+              (iter acc (first ls)))
+        (second ls))
+      acc
+    ))
+  (println (clojure.set/select #(not (empty? %)) (set (iter [] x))))
+    (count (clojure.set/select #(not (empty? %)) (set (iter [] x))))
+  )
+
+
+
+
+
