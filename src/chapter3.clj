@@ -270,7 +270,7 @@
 ;;3.16
 ;; find counter points that prove this function wrong
 (defn pair? [x]
-  (and (coll? x) (= (count x) 2)))
+  (and (coll? x) (>= (count x) 2)))
 
 (defn count-pairs [x]
   (if (not (pair? x))
@@ -297,22 +297,38 @@
 ;; correct count-pairs implementation
 (require clojure.set)
 
-(defn distinct-pairs [x]
-  (defn iter [acc ls]
-    (if (and
-           (pair? ls)
-           (nil? (some #{ls} acc)))
-      (iter (conj
-              (cons ls acc)
-              (iter acc (first ls)))
-        (second ls))
-      acc
+(defn count-pairs [p]
+  (let [seen (atom '())]
+    (defn iter [x]
+      (if (or (not (pair? x)) (not (nil? (some #{x} @seen))))
+        0
+        (do
+          (swap! seen conj x)
+          (+ (iter (first x))
+             (iter (second x))
+             1)
+          )
+        )
+      )
+    (iter p)
     ))
-  (println (clojure.set/select #(not (empty? %)) (set (iter [] x))))
-    (count (clojure.set/select #(not (empty? %)) (set (iter [] x))))
+
+;;3.18
+;; find the cycle in a list
+
+;;problems get harder w/ further chapters, that's to be expected
+
+;; to detect a cycle, it should accept arbitrary sublists as well, which means using a function stack
+
+(defn cyclic? [ls]
+  (defn iter [seen xs]
+    (cond
+      (not (pair? xs)) false
+      (= (rest xs) xs)
+        
+      )
+    )
   )
-
-
 
 
 
