@@ -316,19 +316,36 @@
 ;;3.18
 ;; find the cycle in a list
 
-;;problems get harder w/ further chapters, that's to be expected
-
-;; to detect a cycle, it should accept arbitrary sublists as well, which means using a function stack
-
 (defn cyclic? [ls]
   (defn iter [seen xs]
     (cond
       (not (pair? xs)) false
-      (= (rest xs) xs)
-        
+      (= (rest xs) xs) true
+      (= (first xs) rest xs) (iter seen (rest xs))
+      (not (nil? (some #{first xs} seen))) true
+      (not (nil? (some #{rest xs} seen))) true
+      :else
+        (if (not (pair? (first xs)))
+          (iter (cons xs seen) (rest xs))
+          (or
+            (iter (cons xs seen) (first xs))
+            (iter (cons xs seen) (rest xs)))
+          )
       )
     )
+  (iter '() ls)
   )
 
+;;3.19
+;;find the cycle efficiently
+(defn efficient-cyclic? [ls]
+  (defn iter [tortise hare]
+    (if (= (first tortise) (first hare))
+      true
+      (iter (rest tortise) (rest (rest hare)))
+      )
+    )
+  (iter ls (rest ls))
+  )
 
 
