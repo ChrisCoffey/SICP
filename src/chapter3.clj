@@ -348,4 +348,69 @@
   (iter ls (rest ls))
   )
 
+;;3.20
+;; equivalence of assignment and mutation
 
+;;3.21
+;; Why does the example queue definition print the following:
+;;; (define q1 (make-queue))
+;;; (insert-queue! q1 'a)   ->   ((a) a)
+;;; (insert-queue! q1 'b)   ->   ((a b) b)
+;;; (delete-queue! q1)      ->   ((b) b)
+;;; (delete-queue! q1)      ->   (() b)
+
+;; This occurs because the implementation provided always treats the queue as a pair. This is very simmilar to other queue implementations
+;; in functional languages. The definition of "empty" only relies upon the head being empty, so there's no reason to worry about the second
+;; item in the pair.
+(defn show-queue [x]
+  (defn show [q]
+  (if (nil? (second q))
+    (print (first q))
+    (do
+      (printf "%s -> " (first q))
+      (show (rest q))
+      )
+    ))
+  (show (first x))
+  )
+
+;; 3.22
+;; redefine the make-queue constructor
+(defn make-queue []
+  (let [front-ptr (atom [])
+        rear-ptr (atom 0)
+        ]
+
+    (defn emptyQ? []
+      (empty? @front-ptr))
+
+    (defn front-queue []
+      @front-ptr)
+
+    (defn ident [x] x)
+
+    (defn insert [x]
+      (swap! front-ptr conj @rear-ptr)
+      (swap! rear-ptr #(ident %2) x)
+      )
+
+    (defn delete []
+      (def h (first @front-ptr))
+      (swap! front-ptr #(ident %2) (rest @front-ptr))
+      h
+      )
+
+    (defn dispatch [m]
+      (cond
+        (= m 'emptyQ?) (emptyQ?)
+        (= m 'front-queue) (front-queue)
+        (= m 'insert) insert
+        (= m 'delete) (delete)
+        )
+      )
+    dispatch
+    )
+  )
+
+;; 3.23
+;; double ended queue
